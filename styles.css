@@ -289,7 +289,38 @@ input, select, textarea { font: inherit; color: inherit; }
 
 /* Main */
 .main-panel { position: relative; display: flex; height: 100%; min-width: 0; flex: 1; flex-direction: column; }
-.editor-view { display: flex; flex-direction: column; height: 100%; }
+.editor-view { display: flex; flex-direction: column; height: 100%; position: relative; }
+
+/* Floating actions anchored to the bottom-right of the editor, always
+   reachable regardless of scroll position within the note. */
+.editor-fab-group { position: absolute; right: 20px; bottom: 20px; z-index: 12; display: flex; flex-direction: column; gap: 10px; }
+.editor-fab {
+  display: grid; place-items: center; width: 42px; height: 42px; border-radius: 999px;
+  background: var(--surface-2); backdrop-filter: blur(20px) saturate(160%); -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--border); color: var(--muted-foreground);
+  box-shadow: 0 8px 24px rgba(0,0,0,.15), inset 0 1px 0 oklch(1 0 0 / 0.25);
+  transition: color .15s, transform .15s, box-shadow .15s;
+}
+.editor-fab .icon { width: 18px; height: 18px; }
+.editor-fab:hover { color: var(--foreground); transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,.2); }
+.editor-fab:active { transform: translateY(0) scale(0.94); }
+.editor-fab.danger:hover { color: var(--destructive); }
+.editor-fab.fab-success { color: var(--primary); box-shadow: 0 0 0 3px color-mix(in oklch, var(--primary) 30%, transparent), 0 8px 24px rgba(0,0,0,.15); }
+.editor-fab:disabled { opacity: .35; pointer-events: none; }
+@media (max-width: 720px) {
+  .editor-fab-group { right: 14px; bottom: 68px; }
+  .editor-fab { width: 38px; height: 38px; }
+}
+
+/* Export as PDF: print only the active note via the browser's print dialog. */
+@media print {
+  body.printing-note > *:not(#root) { visibility: hidden; }
+  body.printing-note .app-root > *:not(.main-panel) { visibility: hidden; }
+  body.printing-note .main-panel > *:not(#editorView) { visibility: hidden; }
+  body.printing-note #editorView > *:not(.editor-scroll) { visibility: hidden; }
+  body.printing-note .editor-scroll, body.printing-note .editor-scroll * { visibility: visible; }
+  body.printing-note .editor-scroll { position: absolute; inset: 0; overflow: visible; padding: 24px; }
+}
 
 .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; border-bottom: 1px solid var(--border); padding: 10px 16px; }
 .title-input { min-width: 0; flex: 1; margin-right: 12px; background: transparent; border: none; outline: none; font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
@@ -306,14 +337,61 @@ input, select, textarea { font: inherit; color: inherit; }
 .mobile-back-btn { display: none; }
 
 .popover-wrap { position: relative; }
-.popover { position: absolute; right: 0; top: 100%; z-index: 30; margin-top: 4px; display: flex; gap: 6px; border-radius: var(--radius-lg); padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.15); }
+.popover { display: flex; flex-wrap: wrap; gap: 6px; border-radius: var(--radius-lg); padding: 6px; box-shadow: 0 8px 24px rgba(0,0,0,.15); }
 .swatch { width: 24px; height: 24px; border-radius: 999px; transition: transform .1s; }
 .swatch:hover { box-shadow: 0 0 0 2px var(--primary); transform: scale(1.08); }
 .swatch-clear { display: grid; place-items: center; border: 1px solid var(--border); font-size: 10px; }
 
-.menu { position: absolute; right: 0; top: 100%; z-index: 30; margin-top: 4px; min-width: 220px; overflow: hidden; border-radius: var(--radius-lg); padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.15); }
+.menu { min-width: 220px; overflow: hidden; border-radius: var(--radius-lg); padding: 4px; box-shadow: 0 8px 24px rgba(0,0,0,.15); }
 .menu-item { display: flex; width: 100%; align-items: center; gap: 8px; border-radius: var(--radius-md); padding: 6px 10px; text-align: left; font-size: 12px; }
 .menu-item:hover { background: var(--secondary); }
+
+/* ---- Floating menus: portaled to <body> so an ancestor's overflow-x:auto
+   (e.g. the mobile toolbar) can never clip them, with a slide+fade reveal
+   on open. On mobile they switch to a bottom sheet instead of a dropdown. ---- */
+.floating-menu {
+  position: fixed;
+  z-index: 200;
+  opacity: 0;
+  transform: translateY(-8px) scale(0.97);
+  transform-origin: top right;
+  pointer-events: none;
+  visibility: hidden;
+  transition: opacity .16s cubic-bezier(.4,0,.2,1), transform .16s cubic-bezier(.4,0,.2,1), visibility 0s linear .16s;
+}
+.floating-menu.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+  visibility: visible;
+  transition: opacity .2s cubic-bezier(.4,0,.2,1), transform .2s cubic-bezier(.4,0,.2,1);
+}
+.floating-scrim {
+  position: fixed; inset: 0; z-index: 190;
+  background: color-mix(in oklch, var(--background) 45%, transparent);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  opacity: 0; pointer-events: none; transition: opacity .18s;
+}
+.floating-scrim.show { opacity: 1; pointer-events: auto; }
+
+@media (max-width: 720px) {
+  .floating-menu.sheet-mode {
+    left: 0 !important; right: 0 !important; bottom: 0 !important; top: auto !important;
+    width: 100%; max-width: 100%; max-height: 75vh; overflow-y: auto;
+    border-radius: var(--radius-2xl) var(--radius-2xl) 0 0;
+    transform: translateY(100%);
+    transform-origin: bottom center;
+    box-shadow: 0 -20px 60px rgba(0,0,0,.25);
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+  .floating-menu.sheet-mode.open { transform: translateY(0); }
+  .floating-menu.sheet-mode::before {
+    content: ""; display: block; width: 36px; height: 4px; border-radius: 999px;
+    background: var(--border); margin: 10px auto 6px;
+  }
+  .floating-menu.sheet-mode.popover { justify-content: center; }
+  .floating-menu.sheet-mode .menu-item { padding: 11px 16px; font-size: 14px; }
+}
 
 .editor-scroll { position: relative; flex: 1; overflow-y: auto; }
 .editor-inner { margin: 0 auto; width: 100%; max-width: 760px; padding: 40px 24px; }
@@ -332,6 +410,11 @@ input, select, textarea { font: inherit; color: inherit; }
 .editor-content code { font-family: ui-monospace, "SF Mono", Menlo, monospace; background: var(--muted); padding: 0.1rem 0.35rem; border-radius: 0.3rem; font-size: 0.9em; }
 .editor-content hr { border: 0; border-top: 1px solid var(--border); margin: 1rem 0; }
 .editor-content a { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
+.editor-content a:hover { opacity: .8; }
+.editor-content img { max-width: 100%; border-radius: var(--radius-md); margin: 0.6rem 0; display: block; }
+.editor-content ul.checklist { list-style: none; padding-left: 0.1rem; }
+.editor-content ul.checklist li { display: flex; align-items: flex-start; gap: 8px; margin: 0.35rem 0; line-height: 1.6; }
+.editor-content ul.checklist input[type="checkbox"] { margin-top: 5px; width: 15px; height: 15px; flex-shrink: 0; accent-color: var(--primary); }
 .editor-content[data-empty]:empty::before { content: attr(data-empty); color: var(--muted-foreground); pointer-events: none; position: absolute; }
 .editor-content[contenteditable="false"] { cursor: default; }
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
 <title>TinyNote</title>
 <meta name="description" content="TinyNote — a private, fast notepad. Nothing leaves your device." />
 <link rel="icon" href="data:,">
@@ -12,8 +12,7 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-<div id="app" class="app-root">
+<div id="root"><div id="app" class="app-root">
 
   <!-- SIDEBAR -->
   <aside class="sidebar glass-strong" id="sidebar">
@@ -92,6 +91,18 @@
           <button class="tool-btn" data-cmd="bold" title="Bold (⌘B)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-bold"/></svg></button>
           <button class="tool-btn" data-cmd="italic" title="Italic (⌘I)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-italic"/></svg></button>
           <button class="tool-btn" data-cmd="underline" title="Underline"><svg viewBox="0 0 24 24" class="icon"><use href="#i-underline"/></svg></button>
+          <button class="tool-btn" data-cmd="strikeThrough" title="Strikethrough"><svg viewBox="0 0 24 24" class="icon"><use href="#i-strike"/></svg></button>
+        </div>
+        <div class="tool-group">
+          <div class="popover-wrap" id="textColorWrap">
+            <button class="tool-btn" id="btnTextColor" title="Text color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-type"/></svg></button>
+          </div>
+          <div class="popover-wrap" id="fontSizeWrap">
+            <button class="tool-btn" id="btnFontSize" title="Font size"><svg viewBox="0 0 24 24" class="icon"><use href="#i-size"/></svg></button>
+          </div>
+          <div class="popover-wrap" id="insertWrap">
+            <button class="tool-btn" id="btnInsert" title="Insert"><svg viewBox="0 0 24 24" class="icon"><use href="#i-insert"/></svg></button>
+          </div>
         </div>
         <div class="tool-group">
           <button class="tool-btn" data-block="H1" title="Heading 1"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h1"/></svg></button>
@@ -108,14 +119,6 @@
         <div class="tool-group">
           <div class="popover-wrap" id="colorPopoverWrap">
             <button class="tool-btn" id="btnColor" title="Label color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-palette"/></svg></button>
-            <div class="popover glass-strong hidden" id="colorPopover">
-              <button class="swatch swatch-clear" data-color="" title="Clear">✕</button>
-              <button class="swatch" data-color="oklch(0.82 0.15 75)" style="background:oklch(0.82 0.15 75)" aria-label="amber"></button>
-              <button class="swatch" data-color="oklch(0.75 0.17 15)" style="background:oklch(0.75 0.17 15)" aria-label="rose"></button>
-              <button class="swatch" data-color="oklch(0.72 0.15 155)" style="background:oklch(0.72 0.15 155)" aria-label="emerald"></button>
-              <button class="swatch" data-color="oklch(0.75 0.13 230)" style="background:oklch(0.75 0.13 230)" aria-label="sky"></button>
-              <button class="swatch" data-color="oklch(0.7 0.17 300)" style="background:oklch(0.7 0.17 300)" aria-label="violet"></button>
-            </div>
           </div>
           <button class="tool-btn" id="btnPin" title="Pin"><svg viewBox="0 0 24 24" class="icon"><use href="#i-pin"/></svg></button>
           <button class="tool-btn" id="btnFav" title="Favorite"><svg viewBox="0 0 24 24" class="icon"><use href="#i-star"/></svg></button>
@@ -125,19 +128,51 @@
         <div class="tool-group tool-group-last">
           <div class="popover-wrap" id="moreMenuWrap">
             <button class="tool-btn" id="btnMore" title="More"><svg viewBox="0 0 24 24" class="icon"><use href="#i-more"/></svg></button>
-            <div class="menu glass-strong hidden" id="moreMenu">
-              <button class="menu-item" id="mExportTxt"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .txt</button>
-              <button class="menu-item" id="mExportMd"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .md</button>
-              <button class="menu-item" id="mExportJson"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .json</button>
-              <button class="menu-item" id="mExportAll"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export all (backup)</button>
-              <button class="menu-item" id="mImport"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-upload"/></svg>Import file…</button>
-              <button class="menu-item" id="mZen"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-feather"/></svg>Toggle Zen mode</button>
-              <button class="menu-item" id="mFocus"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-palette"/></svg>Toggle Focus mode</button>
-              <button class="menu-item" id="mFullscreen"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-maximize"/></svg><span id="fsLabel">Fullscreen</span></button>
-            </div>
           </div>
           <input type="file" id="importFileInput" accept=".txt,.md,.json" class="hidden" multiple />
         </div>
+      </div>
+
+      <!-- Floating popovers/menus: JS moves these to <body> on init so they
+           can never be clipped by the toolbar's horizontal scroll, and they
+           become bottom sheets on mobile. -->
+      <div class="floating-menu popover glass-strong" id="colorPopover">
+        <button class="swatch swatch-clear" data-color="" title="Clear">✕</button>
+        <button class="swatch" data-color="oklch(0.82 0.15 75)" style="background:oklch(0.82 0.15 75)" aria-label="amber"></button>
+        <button class="swatch" data-color="oklch(0.75 0.17 15)" style="background:oklch(0.75 0.17 15)" aria-label="rose"></button>
+        <button class="swatch" data-color="oklch(0.72 0.15 155)" style="background:oklch(0.72 0.15 155)" aria-label="emerald"></button>
+        <button class="swatch" data-color="oklch(0.75 0.13 230)" style="background:oklch(0.75 0.13 230)" aria-label="sky"></button>
+        <button class="swatch" data-color="oklch(0.7 0.17 300)" style="background:oklch(0.7 0.17 300)" aria-label="violet"></button>
+      </div>
+      <div class="floating-menu popover glass-strong" id="textColorPopover">
+        <button class="swatch swatch-clear" data-tcolor="inherit" title="Default">✕</button>
+        <button class="swatch" data-tcolor="#e11d48" style="background:#e11d48" aria-label="red"></button>
+        <button class="swatch" data-tcolor="#d97706" style="background:#d97706" aria-label="amber"></button>
+        <button class="swatch" data-tcolor="#16a34a" style="background:#16a34a" aria-label="green"></button>
+        <button class="swatch" data-tcolor="#2563eb" style="background:#2563eb" aria-label="blue"></button>
+        <button class="swatch" data-tcolor="#7c3aed" style="background:#7c3aed" aria-label="violet"></button>
+      </div>
+      <div class="floating-menu menu glass-strong" id="fontSizeMenu">
+        <button class="menu-item" data-fsize="12px">Small</button>
+        <button class="menu-item" data-fsize="15px">Normal</button>
+        <button class="menu-item" data-fsize="20px">Large</button>
+        <button class="menu-item" data-fsize="28px">Huge</button>
+      </div>
+      <div class="floating-menu menu glass-strong" id="insertMenu">
+        <button class="menu-item" id="mInsertLink"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-link"/></svg>Insert link</button>
+        <button class="menu-item" id="mInsertImage"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-image"/></svg>Insert image</button>
+        <button class="menu-item" id="mInsertChecklist"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-checklist"/></svg>Insert checklist</button>
+      </div>
+      <div class="floating-menu menu glass-strong" id="moreMenu">
+        <button class="menu-item" id="mExportTxt"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .txt</button>
+        <button class="menu-item" id="mExportMd"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .md</button>
+        <button class="menu-item" id="mExportJson"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .json</button>
+        <button class="menu-item" id="mExportPdf"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as PDF</button>
+        <button class="menu-item" id="mExportAll"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export all (backup)</button>
+        <button class="menu-item" id="mImport"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-upload"/></svg>Import file…</button>
+        <button class="menu-item" id="mZen"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-feather"/></svg>Toggle Zen mode</button>
+        <button class="menu-item" id="mFocus"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-palette"/></svg>Toggle Focus mode</button>
+        <button class="menu-item" id="mFullscreen"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-maximize"/></svg><span id="fsLabel">Fullscreen</span></button>
       </div>
 
       <!-- Editor / Preview -->
@@ -145,6 +180,12 @@
         <div class="editor-inner">
           <div id="editor" class="editor-content" contenteditable="true" spellcheck="true" role="textbox" aria-label="Note content" data-empty="Start writing…"></div>
         </div>
+      </div>
+
+      <!-- Floating quick actions -->
+      <div class="editor-fab-group" id="editorFabGroup">
+        <button class="editor-fab" id="btnCopyAll" title="Copy all text" aria-label="Copy all text"><svg viewBox="0 0 24 24" class="icon"><use href="#i-copy"/></svg></button>
+        <button class="editor-fab danger" id="btnDeleteAll" title="Delete all text" aria-label="Delete all text"><svg viewBox="0 0 24 24" class="icon"><use href="#i-trash"/></svg></button>
       </div>
 
       <!-- Status bar -->
@@ -239,9 +280,15 @@
 <g id="i-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></g>
 <g id="i-copy"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></g>
 <g id="i-trash"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></g>
+<g id="i-strike"><path d="M16 4H9a3 3 0 0 0-2.83 4"/><path d="M14 12a4 4 0 0 1 0 8H6"/><line x1="4" y1="12" x2="20" y2="12"/></g>
+<g id="i-type"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></g>
+<g id="i-size"><path d="M3 6h13M3 12h9M3 18h5"/><path d="m17 18 3-3-3-3"/><line x1="20" y1="6" x2="20" y2="18"/></g>
+<g id="i-insert"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></g>
+<g id="i-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></g>
+<g id="i-image"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></g>
+<g id="i-checklist"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></g>
 </defs>
-</svg>
-
+</svg></div>
 <script src="script.js"></script>
 </body>
 </html>

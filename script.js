@@ -1,32 +1,33 @@
 (() => {
-  "use strict";
-
-  /* ===================== Store (persisted in the browser) ===================== */
   const NOTES_KEY = "tinynote.notes.v1";
   const SETTINGS_KEY = "tinynote.settings.v1";
   const HISTORY_KEY = "tinynote.history.v1";
-
   const uid = () => "n_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
-
   function loadNotes() {
     try {
       const raw = localStorage.getItem(NOTES_KEY);
       if (!raw) return [];
       return JSON.parse(raw);
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   }
-  function saveNotes(notes) { localStorage.setItem(NOTES_KEY, JSON.stringify(notes)); }
-
+  function saveNotes(list) {
+    localStorage.setItem(NOTES_KEY, JSON.stringify(list));
+  }
   function loadSettings() {
     const defaults = { theme: "light", sortBy: "updated", sidebarWidth: 300, activeId: null, recentSearches: [] };
     try {
       const raw = localStorage.getItem(SETTINGS_KEY);
       if (!raw) return defaults;
       return { ...defaults, ...JSON.parse(raw) };
-    } catch { return defaults; }
+    } catch {
+      return defaults;
+    }
   }
-  function saveSettings(s) { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); }
-
+  function saveSettings(s) {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  }
   function pushHistory(noteId, content) {
     try {
       const raw = localStorage.getItem(HISTORY_KEY);
@@ -37,7 +38,8 @@
       list.push({ t: Date.now(), c: content });
       map[noteId] = list.slice(-30);
       localStorage.setItem(HISTORY_KEY, JSON.stringify(map));
-    } catch { /* ignore quota */ }
+    } catch {
+    }
   }
   function loadHistory(noteId) {
     try {
@@ -45,16 +47,14 @@
       if (!raw) return [];
       const map = JSON.parse(raw);
       return map[noteId] || [];
-    } catch { return []; }
+    } catch {
+      return [];
+    }
   }
-
-  const BLOCK_TAGS = new Set(["P", "DIV", "H1", "H2", "H3", "LI", "BLOCKQUOTE", "PRE", "UL", "OL", "BR", "HR"]);
+  const BLOCK_TAGS = /* @__PURE__ */ new Set(["P", "DIV", "H1", "H2", "H3", "LI", "BLOCKQUOTE", "PRE", "UL", "OL", "BR", "HR"]);
   function stripHtml(html) {
     const el = document.createElement("div");
     el.innerHTML = html;
-    // Insert a space between block-level elements so adjacent blocks (e.g. a
-    // heading followed by a paragraph) don't run together as one word when
-    // used for previews, search, and .txt export.
     el.querySelectorAll("*").forEach((node) => {
       if (BLOCK_TAGS.has(node.tagName)) node.insertAdjacentText("afterend", " ");
     });
@@ -76,16 +76,22 @@
   function makeNote(overrides = {}) {
     const now = Date.now();
     return {
-      id: uid(), title: "Untitled", content: "", createdAt: now, updatedAt: now,
-      pinned: false, favorite: false, color: null, trashed: false, order: now,
-      ...overrides,
+      id: uid(),
+      title: "Untitled",
+      content: "",
+      createdAt: now,
+      updatedAt: now,
+      pinned: false,
+      favorite: false,
+      color: null,
+      trashed: false,
+      order: now,
+      ...overrides
     };
   }
-
-  /* ===================== Helpers ===================== */
   const fmt = (t) => {
     const now = Date.now();
-    const diff = (now - t) / 1000;
+    const diff = (now - t) / 1e3;
     if (diff < 60) return "just now";
     if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
@@ -93,12 +99,11 @@
     return new Date(t).toLocaleDateString();
   };
   const escapeReg = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-  function highlightHTML(html, query) {
-    if (!query) return html;
+  function highlightHTML(html, query2) {
+    if (!query2) return html;
     const el = document.createElement("div");
     el.innerHTML = html;
-    const re = new RegExp(escapeReg(query), "gi");
+    const re = new RegExp(escapeReg(query2), "gi");
     const walk = (node) => {
       if (node.nodeType === 3) {
         const text = node.nodeValue || "";
@@ -124,15 +129,15 @@
     Array.from(el.childNodes).forEach(walk);
     return el.innerHTML;
   }
-
   function download(name, content, type = "text/plain") {
     const blob = new Blob([content], { type });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = name; a.click();
+    a.href = url;
+    a.download = name;
+    a.click();
     URL.revokeObjectURL(url);
   }
-
   function htmlToMarkdown(html) {
     const el = document.createElement("div");
     el.innerHTML = html;
@@ -142,28 +147,65 @@
       const e = node;
       const kids = Array.from(e.childNodes).map(walk).join("");
       switch (e.tagName) {
-        case "H1": return `\n# ${kids}\n`;
-        case "H2": return `\n## ${kids}\n`;
-        case "H3": return `\n### ${kids}\n`;
-        case "STRONG": case "B": return `**${kids}**`;
-        case "EM": case "I": return `*${kids}*`;
-        case "U": return `<u>${kids}</u>`;
-        case "BLOCKQUOTE": return `\n> ${kids}\n`;
-        case "PRE": return `\n\`\`\`\n${e.textContent}\n\`\`\`\n`;
-        case "CODE": return `\`${kids}\``;
-        case "HR": return `\n---\n`;
-        case "BR": return `\n`;
-        case "UL": return `\n${Array.from(e.children).map((c) => `- ${walk(c)}`).join("\n")}\n`;
-        case "OL": return `\n${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}\n`;
-        case "LI": return kids.trim();
-        case "P": case "DIV": return `${kids}\n`;
-        default: return kids;
+        case "H1":
+          return `
+# ${kids}
+`;
+        case "H2":
+          return `
+## ${kids}
+`;
+        case "H3":
+          return `
+### ${kids}
+`;
+        case "STRONG":
+        case "B":
+          return `**${kids}**`;
+        case "EM":
+        case "I":
+          return `*${kids}*`;
+        case "U":
+          return `<u>${kids}</u>`;
+        case "BLOCKQUOTE":
+          return `
+> ${kids}
+`;
+        case "PRE":
+          return `
+\`\`\`
+${e.textContent}
+\`\`\`
+`;
+        case "CODE":
+          return `\`${kids}\``;
+        case "HR":
+          return `
+---
+`;
+        case "BR":
+          return `
+`;
+        case "UL":
+          return `
+${Array.from(e.children).map((c) => `- ${walk(c)}`).join("\n")}
+`;
+        case "OL":
+          return `
+${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
+`;
+        case "LI":
+          return kids.trim();
+        case "P":
+        case "DIV":
+          return `${kids}
+`;
+        default:
+          return kids;
       }
     };
     return Array.from(el.childNodes).map(walk).join("").replace(/\n{3,}/g, "\n\n").trim();
   }
-
-  /* ===================== State ===================== */
   let notes = [];
   let settings = { theme: "light", sortBy: "updated", sidebarWidth: 300, activeId: null, recentSearches: [] };
   let query = "";
@@ -177,13 +219,14 @@
   let historyTimer = null;
   let resizing = false;
   let dragDepth = 0;
-
   const mobileMql = window.matchMedia("(max-width: 720px)");
   let isMobile = mobileMql.matches;
   let mobileEditorOpen = false;
-
-  /* ===================== DOM refs ===================== */
-  const $ = (id) => document.getElementById(id);
+  function $(id) {
+    const el = document.getElementById(id);
+    if (!el) throw new Error(`Missing #${id}`);
+    return el;
+  }
   const root = $("app");
   const sidebar = $("sidebar");
   const searchInput = $("searchInput");
@@ -210,16 +253,13 @@
   const historyOverlay = $("historyOverlay");
   const historyBody = $("historyBody");
   const dropOverlay = $("dropOverlay");
-
-  /* ===================== Init ===================== */
   function init() {
     settings = loadSettings();
     notes = loadNotes();
     if (notes.length === 0) {
       const welcome = makeNote({
         title: "Welcome to TinyNote",
-        content:
-          "<h1>Welcome to TinyNote</h1><p>A private space for your thoughts, fast enough to keep up with them.</p><p><strong>Try:</strong></p><ul><li>Press <code>Ctrl/⌘ K</code> for the command palette</li><li>Format with <code>Ctrl+B</code>, <code>Ctrl+I</code></li><li>Export, or import — even by dragging a file onto the app</li></ul><blockquote>Just you and your thoughts.</blockquote>",
+        content: "<h1>Welcome to TinyNote</h1><p>A private space for your thoughts, fast enough to keep up with them.</p><p><strong>Try:</strong></p><ul><li>Press <code>Ctrl/\u2318 K</code> for the command palette</li><li>Format with <code>Ctrl+B</code>, <code>Ctrl+I</code></li><li>Export, or import \u2014 even by dragging a file onto the app</li></ul><blockquote>Just you and your thoughts.</blockquote>"
       });
       notes = [welcome];
       settings.activeId = welcome.id;
@@ -230,15 +270,10 @@
     sidebar.style.width = settings.sidebarWidth + "px";
     sortSelect.value = settings.sortBy;
     bindEvents();
-
-    // On mobile, always start on the notes list rather than jumping
-    // straight into whichever note was last open.
     isMobile = mobileMql.matches;
     mobileEditorOpen = false;
-
     renderAll();
   }
-
   function renderMobileLayout() {
     if (!isMobile) {
       sidebar.classList.remove("mobile-hide");
@@ -248,7 +283,6 @@
     sidebar.classList.toggle("mobile-hide", mobileEditorOpen);
     mainPanel.classList.toggle("mobile-show", mobileEditorOpen);
   }
-
   function applyTheme() {
     document.documentElement.classList.remove("dark", "amoled", "sepia");
     if (settings.theme !== "light") document.documentElement.classList.add(settings.theme);
@@ -257,24 +291,22 @@
       chip.classList.toggle("active", chip.dataset.theme === settings.theme);
     });
   }
-
-  function getActive() { return notes.find((n) => n.id === settings.activeId) || null; }
-
+  function getActive() {
+    return notes.find((n) => n.id === settings.activeId) || null;
+  }
   function setActive(id) {
     settings.activeId = id;
     saveSettings(settings);
     if (isMobile) mobileEditorOpen = true;
     renderAll();
   }
-
   function updateNote(id, patch) {
-    notes = notes.map((n) => (n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n));
+    notes = notes.map((n) => n.id === id ? { ...n, ...patch, updatedAt: Date.now() } : n);
     saveNotes(notes);
   }
-
-  function persistNotes() { saveNotes(notes); }
-
-  /* ===================== Rendering ===================== */
+  function persistNotes() {
+    saveNotes(notes);
+  }
   function getVisible() {
     const q = query.trim().toLowerCase();
     let list = notes.filter((n) => n.trashed === showTrash);
@@ -289,7 +321,6 @@
     };
     return list.slice().sort(cmp);
   }
-
   function renderAll() {
     root.classList.toggle("zen", zen);
     root.classList.toggle("focus-mode", focusMode);
@@ -300,7 +331,6 @@
     renderEditorArea();
     updateToolbarActiveStates();
   }
-
   function renderRecentSearches() {
     recentSearchesEl.innerHTML = "";
     if (query || settings.recentSearches.length === 0) return;
@@ -308,26 +338,28 @@
       const b = document.createElement("button");
       b.className = "recent-chip";
       b.textContent = r;
-      b.onclick = () => { query = r; searchInput.value = r; toggleClearBtn(); renderAll(); };
+      b.onclick = () => {
+        query = r;
+        searchInput.value = r;
+        toggleClearBtn();
+        renderAll();
+      };
       recentSearchesEl.appendChild(b);
     });
   }
-
   function renderTabs() {
     tabAll.classList.toggle("tab-active", !showTrash);
     tabTrash.classList.toggle("tab-active", showTrash);
   }
-
   function renderNotesList() {
     const visible = getVisible();
     notesListEl.innerHTML = "";
-
     if (visible.length === 0) {
       const wrap = document.createElement("div");
       wrap.className = "empty-list";
       wrap.innerHTML = `
-        <div class="empty-list-icon"><svg viewBox="0 0 24 24" class="icon" style="width:22px;height:22px"><use href="#i-book"/></svg></div>
-        <p>${showTrash ? "Trash is empty." : query ? "No matches." : "No notes yet."}</p>`;
+      <div class="empty-list-icon"><svg viewBox="0 0 24 24" class="icon" style="width:22px;height:22px"><use href="#i-book"/></svg></div>
+      <p>${showTrash ? "Trash is empty." : query ? "No matches." : "No notes yet."}</p>`;
       notesListEl.appendChild(wrap);
       if (!showTrash && !query) {
         const btn = document.createElement("button");
@@ -337,7 +369,6 @@
         wrap.appendChild(btn);
       }
     }
-
     visible.forEach((n) => {
       const isActive = n.id === settings.activeId;
       const previewText = stripHtml(n.content).slice(0, 90);
@@ -345,40 +376,54 @@
       card.className = "note-card anim-float" + (isActive ? " active" : "");
       card.draggable = !showTrash;
       if (n.color) card.style.boxShadow = `inset 3px 0 0 0 ${n.color}`;
-
       const titleHtml = query ? highlightHTML(escapeHtml(n.title || "Untitled"), query) : escapeHtml(n.title || "Untitled");
-
       card.innerHTML = `
-        <div class="note-top">
-          <span class="note-title">${titleHtml}</span>
-          ${n.pinned ? '<svg viewBox="0 0 24 24" class="icon icon-xs pin-mark"><use href="#i-pin"/></svg>' : ""}
-          ${n.favorite ? '<svg viewBox="0 0 24 24" class="icon icon-xs fav-mark"><use href="#i-star"/></svg>' : ""}
-        </div>
-        <div class="note-preview">${escapeHtml(previewText) || "Empty note"}</div>
-        <div class="note-meta">
-          <span>${fmt(n.updatedAt)}</span>
-          <div class="note-actions"></div>
-        </div>`;
-
+      <div class="note-top">
+        <span class="note-title">${titleHtml}</span>
+        ${n.pinned ? '<svg viewBox="0 0 24 24" class="icon icon-xs pin-mark"><use href="#i-pin"/></svg>' : ""}
+        ${n.favorite ? '<svg viewBox="0 0 24 24" class="icon icon-xs fav-mark"><use href="#i-star"/></svg>' : ""}
+      </div>
+      <div class="note-preview">${escapeHtml(previewText) || "Empty note"}</div>
+      <div class="note-meta">
+        <span>${fmt(n.updatedAt)}</span>
+        <div class="note-actions"></div>
+      </div>`;
       const actions = card.querySelector(".note-actions");
       if (!showTrash) {
-        actions.appendChild(iconBtn("i-pin", "Pin", (e) => { e.stopPropagation(); togglePin(n.id); }));
-        actions.appendChild(iconBtn("i-star", "Favorite", (e) => { e.stopPropagation(); toggleFav(n.id); }));
-        actions.appendChild(iconBtn("i-copy", "Duplicate", (e) => { e.stopPropagation(); duplicateNote(n.id); }));
-        actions.appendChild(iconBtn("i-trash", "Delete", (e) => { e.stopPropagation(); trashNote(n.id); }));
+        actions.appendChild(iconBtn("i-pin", "Pin", (e) => {
+          e.stopPropagation();
+          togglePin(n.id);
+        }));
+        actions.appendChild(iconBtn("i-star", "Favorite", (e) => {
+          e.stopPropagation();
+          toggleFav(n.id);
+        }));
+        actions.appendChild(iconBtn("i-copy", "Duplicate", (e) => {
+          e.stopPropagation();
+          duplicateNote(n.id);
+        }));
+        actions.appendChild(iconBtn("i-trash", "Delete", (e) => {
+          e.stopPropagation();
+          trashNote(n.id);
+        }));
       } else {
-        actions.appendChild(iconBtn("i-undo", "Restore", (e) => { e.stopPropagation(); restoreNote(n.id); }));
-        actions.appendChild(iconBtn("i-x", "Delete forever", (e) => { e.stopPropagation(); deleteForever(n.id); }));
+        actions.appendChild(iconBtn("i-undo", "Restore", (e) => {
+          e.stopPropagation();
+          restoreNote(n.id);
+        }));
+        actions.appendChild(iconBtn("i-x", "Delete forever", (e) => {
+          e.stopPropagation();
+          deleteForever(n.id);
+        }));
       }
-
       card.addEventListener("click", () => setActive(n.id));
-      card.addEventListener("dragstart", () => { dragId = n.id; });
+      card.addEventListener("dragstart", () => {
+        dragId = n.id;
+      });
       card.addEventListener("dragover", (e) => e.preventDefault());
       card.addEventListener("drop", () => onDrop(n.id));
-
       notesListEl.appendChild(card);
     });
-
     if (showTrash && visible.length > 0) {
       const btn = document.createElement("button");
       btn.className = "empty-trash-btn";
@@ -387,7 +432,6 @@
       notesListEl.appendChild(btn);
     }
   }
-
   function iconBtn(iconId, title, onClick) {
     const b = document.createElement("button");
     b.className = "icon-btn-xs";
@@ -396,14 +440,13 @@
     b.onclick = onClick;
     return b;
   }
-
   function escapeHtml(s) {
     const d = document.createElement("div");
     d.textContent = s;
     return d.innerHTML;
   }
-
   function renderEditorArea() {
+    var _a;
     const active = getActive();
     if (!active) {
       editorView.classList.add("hidden");
@@ -412,24 +455,20 @@
     }
     emptyState.classList.add("hidden");
     editorView.classList.remove("hidden");
-
     if (document.activeElement !== titleInput) titleInput.value = active.title;
-
     if (editor.innerHTML !== active.content && document.activeElement !== editor) {
       editor.innerHTML = active.content || "";
     }
-    editor.setAttribute("data-empty", editor.textContent.trim() ? "" : "Start writing…");
-
+    editor.setAttribute("data-empty", ((_a = editor.textContent) == null ? void 0 : _a.trim()) ? "" : "Start writing\u2026");
     editor.setAttribute("contenteditable", viewOnly ? "false" : "true");
     titleInput.readOnly = viewOnly;
-    document.querySelectorAll("#btnUndo, #btnRedo, #btnHr, #btnColor, [data-cmd], [data-block]").forEach((b) => {
+    document.querySelectorAll("#btnUndo, #btnRedo, #btnHr, #btnColor, #btnTextColor, #btnFontSize, #btnInsert, [data-cmd], [data-block]").forEach((b) => {
       b.disabled = viewOnly;
     });
-
+    $("btnDeleteAll").toggleAttribute("disabled", viewOnly);
     $("btnPin").classList.toggle("active", !!active.pinned);
     $("btnFav").classList.toggle("fav-active", !!active.favorite);
     $("btnPreview").classList.toggle("active", viewOnly);
-
     const stats = countStats(active.content);
     statWords.textContent = `${stats.words} words`;
     statChars.textContent = `${stats.chars} chars`;
@@ -437,8 +476,6 @@
     statSaved.innerHTML = savedAt ? `<span class="save-dot"></span>Saved ${fmt(savedAt)}` : "";
     statEdited.textContent = `Edited ${fmt(active.updatedAt)}`;
   }
-
-  /* ===================== Actions ===================== */
   function newNote() {
     const n = makeNote();
     notes = [n, ...notes];
@@ -447,82 +484,84 @@
     setActive(n.id);
     setTimeout(() => editor.focus(), 60);
   }
-
   function duplicateNote(id) {
-    const src = notes.find((n) => n.id === (id || settings.activeId));
+    const src = notes.find((n2) => n2.id === (id || settings.activeId));
     if (!src) return;
     const n = makeNote({ title: src.title + " copy", content: src.content, color: src.color });
     notes = [n, ...notes];
     persistNotes();
     setActive(n.id);
   }
-
   function trashNote(id) {
-    notes = notes.map((n) => (n.id === id ? { ...n, trashed: true, trashedAt: Date.now() } : n));
-    persistNotes(); renderAll();
+    notes = notes.map((n) => n.id === id ? { ...n, trashed: true, trashedAt: Date.now() } : n);
+    persistNotes();
+    renderAll();
   }
   function restoreNote(id) {
-    notes = notes.map((n) => (n.id === id ? { ...n, trashed: false } : n));
-    persistNotes(); renderAll();
+    notes = notes.map((n) => n.id === id ? { ...n, trashed: false } : n);
+    persistNotes();
+    renderAll();
   }
   function deleteForever(id) {
     notes = notes.filter((n) => n.id !== id);
-    persistNotes(); renderAll();
+    persistNotes();
+    renderAll();
   }
   function emptyTrash() {
     notes = notes.filter((n) => !n.trashed);
-    persistNotes(); renderAll();
+    persistNotes();
+    renderAll();
   }
   function togglePin(id) {
-    notes = notes.map((n) => (n.id === id ? { ...n, pinned: !n.pinned } : n));
-    persistNotes(); renderAll();
+    notes = notes.map((n) => n.id === id ? { ...n, pinned: !n.pinned } : n);
+    persistNotes();
+    renderAll();
   }
   function toggleFav(id) {
-    notes = notes.map((n) => (n.id === id ? { ...n, favorite: !n.favorite } : n));
-    persistNotes(); renderAll();
+    notes = notes.map((n) => n.id === id ? { ...n, favorite: !n.favorite } : n);
+    persistNotes();
+    renderAll();
   }
   function setColor(id, color) {
-    notes = notes.map((n) => (n.id === id ? { ...n, color: color || null } : n));
-    persistNotes(); renderAll();
+    notes = notes.map((n) => n.id === id ? { ...n, color: color || null } : n);
+    persistNotes();
+    renderAll();
   }
-
   function exportNote(n, kind) {
     const base = (n.title || "note").replace(/[^\w-]+/g, "_");
     if (kind === "txt") download(`${base}.txt`, stripHtml(n.content));
-    else if (kind === "md") download(`${base}.md`, `# ${n.title}\n\n${htmlToMarkdown(n.content)}`);
+    else if (kind === "md") download(`${base}.md`, `# ${n.title}
+
+${htmlToMarkdown(n.content)}`);
     else download(`${base}.json`, JSON.stringify(n, null, 2), "application/json");
   }
-
   function exportAll() {
     const payload = { version: 1, exportedAt: Date.now(), notes };
-    download(`tinynote-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(payload, null, 2), "application/json");
+    download(`tinynote-backup-${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}.json`, JSON.stringify(payload, null, 2), "application/json");
   }
-
   async function importFile(file) {
     const text = await file.text();
     try {
       if (file.name.endsWith(".json")) {
         const data = JSON.parse(text);
         const incoming = Array.isArray(data) ? data : data.notes || [data];
-        const clean = incoming.filter((x) => x && typeof x === "object").map((x) => makeNote({ ...x, id: makeNote().id }));
+        const clean = incoming.filter((x) => !!x && typeof x === "object").map((x) => makeNote({ ...x, id: makeNote().id }));
         notes = [...clean, ...notes];
-        persistNotes(); renderAll();
+        persistNotes();
+        renderAll();
         return;
       }
       const n = makeNote({
         title: file.name.replace(/\.[^.]+$/, ""),
-        content: file.name.endsWith(".md")
-          ? `<pre>${text.replace(/</g, "&lt;")}</pre>`
-          : `<p>${text.replace(/</g, "&lt;").replace(/\n/g, "</p><p>")}</p>`,
+        content: file.name.endsWith(".md") ? `<pre>${text.replace(/</g, "&lt;")}</pre>` : `<p>${text.replace(/</g, "&lt;").replace(/\n/g, "</p><p>")}</p>`
       });
       notes = [n, ...notes];
       persistNotes();
       setActive(n.id);
     } catch (e) {
-      alert("Import failed: " + e.message);
+      alert("Import failed: " + (e instanceof Error ? e.message : String(e)));
     }
   }
-
   function onDrop(targetId) {
     if (!dragId || dragId === targetId) return;
     const arr = [...notes];
@@ -532,17 +571,17 @@
       const [m] = arr.splice(from, 1);
       arr.splice(to, 0, m);
       notes = arr;
-      persistNotes(); renderAll();
+      persistNotes();
+      renderAll();
     }
     dragId = null;
   }
-
   function onEditorInput() {
+    var _a;
     const active = getActive();
     if (!active) return;
     const html = editor.innerHTML;
-    editor.setAttribute("data-empty", editor.textContent.trim() ? "" : "Start writing…");
-
+    editor.setAttribute("data-empty", ((_a = editor.textContent) == null ? void 0 : _a.trim()) ? "" : "Start writing\u2026");
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(() => {
       const title = active.title === "Untitled" || !active.title ? autoTitle(html) : active.title;
@@ -551,11 +590,9 @@
       renderNotesList();
       renderStatsOnly();
     }, 250);
-
     if (historyTimer) clearTimeout(historyTimer);
-    historyTimer = setTimeout(() => pushHistory(active.id, html), 4000);
+    historyTimer = setTimeout(() => pushHistory(active.id, html), 4e3);
   }
-
   function renderStatsOnly() {
     const active = getActive();
     if (!active) return;
@@ -566,7 +603,6 @@
     statSaved.innerHTML = savedAt ? `<span class="save-dot"></span>Saved ${fmt(savedAt)}` : "";
     statEdited.textContent = `Edited ${fmt(active.updatedAt)}`;
   }
-
   function exec(cmd, val) {
     if (viewOnly) return;
     editor.focus();
@@ -574,87 +610,157 @@
     onEditorInput();
     updateToolbarActiveStates();
   }
-
-  const TRACKED_CMDS = ["bold", "italic", "underline", "insertUnorderedList", "insertOrderedList"];
+  const TRACKED_CMDS = ["bold", "italic", "underline", "strikeThrough", "insertUnorderedList", "insertOrderedList"];
+  function wrapSelectionWithStyle(styleProp, styleValue) {
+    if (viewOnly) return;
+    editor.focus();
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+    const range = sel.getRangeAt(0);
+    if (!editor.contains(range.commonAncestorContainer)) return;
+    const span = document.createElement("span");
+    span.style.setProperty(styleProp, styleValue);
+    try {
+      range.surroundContents(span);
+    } catch {
+      const frag = range.extractContents();
+      span.appendChild(frag);
+      range.insertNode(span);
+    }
+    sel.removeAllRanges();
+    const newRange = document.createRange();
+    newRange.selectNodeContents(span);
+    sel.addRange(newRange);
+    onEditorInput();
+  }
   const TRACKED_BLOCKS = ["H1", "H2", "H3", "BLOCKQUOTE", "PRE"];
-
   function isSelectionInEditor() {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return false;
     return editor.contains(sel.getRangeAt(0).commonAncestorContainer);
   }
-
   function getBlockTag() {
     const sel = window.getSelection();
     if (!sel || sel.rangeCount === 0) return "";
     let node = sel.getRangeAt(0).startContainer;
     if (node.nodeType === 3) node = node.parentElement;
     while (node && node !== editor) {
-      if (TRACKED_BLOCKS.includes(node.tagName)) return node.tagName;
+      if (node.nodeType === 1 && TRACKED_BLOCKS.includes(node.tagName)) return node.tagName;
       node = node.parentElement;
     }
     return "";
   }
-
+  const INLINE_TAG_MAP = {
+    bold: ["B", "STRONG"],
+    italic: ["I", "EM"],
+    underline: ["U"],
+    strikeThrough: ["S", "STRIKE", "DEL"]
+  };
+  function isInlineCmdActive(cmd) {
+    var _a, _b;
+    const tags = INLINE_TAG_MAP[cmd];
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return false;
+    let node = sel.getRangeAt(0).startContainer;
+    if (node.nodeType === 3) node = node.parentElement;
+    while (node && node !== editor) {
+      const el = node;
+      if (tags && tags.includes(el.tagName)) return true;
+      if (cmd === "insertUnorderedList" && el.tagName === "LI" && ((_a = el.parentElement) == null ? void 0 : _a.tagName) === "UL") return true;
+      if (cmd === "insertOrderedList" && el.tagName === "LI" && ((_b = el.parentElement) == null ? void 0 : _b.tagName) === "OL") return true;
+      node = el.parentElement;
+    }
+    return false;
+  }
   function updateToolbarActiveStates() {
     const inEditor = !viewOnly && document.activeElement === editor && isSelectionInEditor();
-
     document.querySelectorAll("[data-cmd]").forEach((b) => {
       let state = false;
-      if (inEditor && TRACKED_CMDS.includes(b.dataset.cmd)) {
-        try { state = document.queryCommandState(b.dataset.cmd); } catch { state = false; }
+      const cmd = b.dataset.cmd || "";
+      if (inEditor && TRACKED_CMDS.includes(cmd)) {
+        state = isInlineCmdActive(cmd);
       }
       b.classList.toggle("active", state);
     });
-
     const blockTag = inEditor ? getBlockTag() : "";
     document.querySelectorAll("[data-block]").forEach((b) => {
       b.classList.toggle("active", b.dataset.block === blockTag);
     });
   }
-
   function toggleFullscreen() {
+    var _a, _b, _c;
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen?.();
+      (_b = (_a = document.documentElement).requestFullscreen) == null ? void 0 : _b.call(_a);
       $("fsLabel").textContent = "Exit fullscreen";
     } else {
-      document.exitFullscreen?.();
+      (_c = document.exitFullscreen) == null ? void 0 : _c.call(document);
       $("fsLabel").textContent = "Fullscreen";
     }
   }
-
-  /* ===================== Command palette ===================== */
   function actionsList() {
     const active = getActive();
     return [
-      { label: "New note", hint: "⌘N", run: () => { newNote(); closeCmd(); } },
-      { label: "Duplicate active", hint: "⌘D", run: () => { duplicateNote(); closeCmd(); } },
-      { label: "Export active as Markdown", hint: "⌘S", run: () => { active && exportNote(active, "md"); closeCmd(); } },
-      { label: "Export all (backup)", run: () => { exportAll(); closeCmd(); } },
-      { label: "Toggle Zen mode", run: () => { zen = !zen; renderAll(); closeCmd(); } },
-      { label: "Toggle Focus mode", run: () => { focusMode = !focusMode; renderAll(); closeCmd(); } },
-      { label: "Theme: Light", run: () => { settings.theme = "light"; applyTheme(); closeCmd(); } },
-      { label: "Theme: Dark", run: () => { settings.theme = "dark"; applyTheme(); closeCmd(); } },
-      { label: "Theme: AMOLED", run: () => { settings.theme = "amoled"; applyTheme(); closeCmd(); } },
-      { label: "Theme: Sepia", run: () => { settings.theme = "sepia"; applyTheme(); closeCmd(); } },
+      { label: "New note", hint: "\u2318N", run: () => {
+        newNote();
+        closeCmd();
+      } },
+      { label: "Duplicate active", hint: "\u2318D", run: () => {
+        duplicateNote();
+        closeCmd();
+      } },
+      { label: "Export active as Markdown", hint: "\u2318S", run: () => {
+        if (active) exportNote(active, "md");
+        closeCmd();
+      } },
+      { label: "Export all (backup)", run: () => {
+        exportAll();
+        closeCmd();
+      } },
+      { label: "Toggle Zen mode", run: () => {
+        zen = !zen;
+        renderAll();
+        closeCmd();
+      } },
+      { label: "Toggle Focus mode", run: () => {
+        focusMode = !focusMode;
+        renderAll();
+        closeCmd();
+      } },
+      { label: "Theme: Light", run: () => {
+        settings.theme = "light";
+        applyTheme();
+        closeCmd();
+      } },
+      { label: "Theme: Dark", run: () => {
+        settings.theme = "dark";
+        applyTheme();
+        closeCmd();
+      } },
+      { label: "Theme: AMOLED", run: () => {
+        settings.theme = "amoled";
+        applyTheme();
+        closeCmd();
+      } },
+      { label: "Theme: Sepia", run: () => {
+        settings.theme = "sepia";
+        applyTheme();
+        closeCmd();
+      } }
     ];
   }
-
   function openCmd() {
     cmdOverlay.classList.remove("hidden");
     cmdInput.value = "";
     cmdInput.focus();
     renderCmd("");
   }
-  function closeCmd() { cmdOverlay.classList.add("hidden"); }
-
+  function closeCmd() {
+    cmdOverlay.classList.add("hidden");
+  }
   function renderCmd(q) {
     const ql = q.toLowerCase();
     const actions = actionsList().filter((a) => a.label.toLowerCase().includes(ql));
-    const noteList = q
-      ? notes.filter((n) => n.title.toLowerCase().includes(ql) || stripHtml(n.content).toLowerCase().includes(ql)).slice(0, 8)
-      : notes.slice(0, 6);
-
+    const noteList = q ? notes.filter((n) => n.title.toLowerCase().includes(ql) || stripHtml(n.content).toLowerCase().includes(ql)).slice(0, 8) : notes.slice(0, 6);
     cmdBody.innerHTML = "";
     if (actions.length > 0) {
       const label = document.createElement("div");
@@ -678,7 +784,10 @@
         const row = document.createElement("button");
         row.className = "cmd-row";
         row.innerHTML = `<svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-book"/></svg><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(n.title || "Untitled")}</span><span style="font-size:10px;color:var(--muted-foreground)">${fmt(n.updatedAt)}</span>`;
-        row.onclick = () => { setActive(n.id); closeCmd(); };
+        row.onclick = () => {
+          setActive(n.id);
+          closeCmd();
+        };
         cmdBody.appendChild(row);
       });
     }
@@ -689,8 +798,6 @@
       cmdBody.appendChild(div);
     }
   }
-
-  /* ===================== History panel ===================== */
   function openHistory() {
     const active = getActive();
     if (!active) return;
@@ -706,12 +813,13 @@
       const item = document.createElement("div");
       item.className = "history-item";
       item.innerHTML = `
-        <div class="history-item-top">
-          <span style="font-weight:500">${new Date(v.t).toLocaleString()}</span>
-          <button class="history-restore">Restore</button>
-        </div>
-        <div class="history-snippet">${escapeHtml(stripHtml(v.c).slice(0, 200)) || "Empty"}</div>`;
-      item.querySelector(".history-restore").onclick = () => {
+      <div class="history-item-top">
+        <span style="font-weight:500">${new Date(v.t).toLocaleString()}</span>
+        <button class="history-restore">Restore</button>
+      </div>
+      <div class="history-snippet">${escapeHtml(stripHtml(v.c).slice(0, 200)) || "Empty"}</div>`;
+      const restoreBtn = item.querySelector(".history-restore");
+      restoreBtn.onclick = () => {
         updateNote(active.id, { content: v.c });
         editor.innerHTML = v.c;
         historyOverlay.classList.add("hidden");
@@ -721,15 +829,67 @@
     });
     historyOverlay.classList.remove("hidden");
   }
-
-  /* ===================== Events ===================== */
-  function toggleClearBtn() { btnClearSearch.classList.toggle("hidden", !query); }
-
+  const floatingMenus = [];
+  let floatingScrim;
+  function isMobileViewport() {
+    return window.matchMedia("(max-width: 720px)").matches;
+  }
+  function positionFloatingPanel(trigger, panel) {
+    const r = trigger.getBoundingClientRect();
+    const panelRect = panel.getBoundingClientRect();
+    const w = panelRect.width || 220;
+    let left = r.right - w;
+    left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+    let top = r.bottom + 6;
+    const h = panelRect.height || 0;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, r.top - h - 6);
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  }
+  function closeAllFloating() {
+    floatingMenus.forEach(({ panel }) => panel.classList.remove("open"));
+    floatingScrim.classList.remove("show");
+  }
+  function openFloatingMenu(trigger, panel) {
+    closeAllFloating();
+    const mobile = isMobileViewport();
+    panel.classList.toggle("sheet-mode", mobile);
+    if (mobile) {
+      floatingScrim.classList.add("show");
+    } else {
+      positionFloatingPanel(trigger, panel);
+    }
+    requestAnimationFrame(() => panel.classList.add("open"));
+  }
+  function registerFloatingMenu(triggerId, panelId) {
+    const trigger = $(triggerId);
+    const panel = $(panelId);
+    document.body.appendChild(panel);
+    floatingMenus.push({ trigger, panel });
+    trigger.addEventListener("mousedown", (e) => e.preventDefault());
+    panel.addEventListener("mousedown", (e) => e.preventDefault());
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (panel.classList.contains("open")) closeAllFloating();
+      else openFloatingMenu(trigger, panel);
+    });
+    panel.addEventListener("click", (e) => e.stopPropagation());
+    return panel;
+  }
+  function toggleClearBtn() {
+    btnClearSearch.classList.toggle("hidden", !query);
+  }
   function bindEvents() {
+    document.querySelectorAll(".toolbar button").forEach((b) => {
+      b.addEventListener("mousedown", (e) => e.preventDefault());
+    });
     $("btnNewNoteTop").onclick = newNote;
     $("btnEmptyNew").onclick = newNote;
-
-    searchInput.addEventListener("input", (e) => { query = e.target.value; toggleClearBtn(); renderAll(); });
+    searchInput.addEventListener("input", (e) => {
+      query = e.target.value;
+      toggleClearBtn();
+      renderAll();
+    });
     searchInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && query.trim()) {
         settings.recentSearches = [query, ...settings.recentSearches.filter((x) => x !== query)].slice(0, 6);
@@ -737,94 +897,235 @@
         renderRecentSearches();
       }
     });
-    btnClearSearch.onclick = () => { query = ""; searchInput.value = ""; toggleClearBtn(); renderAll(); };
-
-    tabAll.onclick = () => { showTrash = false; renderAll(); };
-    tabTrash.onclick = () => { showTrash = true; renderAll(); };
-
-    sortSelect.onchange = (e) => { settings.sortBy = e.target.value; saveSettings(settings); renderAll(); };
-
+    btnClearSearch.onclick = () => {
+      query = "";
+      searchInput.value = "";
+      toggleClearBtn();
+      renderAll();
+    };
+    tabAll.onclick = () => {
+      showTrash = false;
+      renderAll();
+    };
+    tabTrash.onclick = () => {
+      showTrash = true;
+      renderAll();
+    };
+    sortSelect.onchange = (e) => {
+      settings.sortBy = e.target.value;
+      saveSettings(settings);
+      renderAll();
+    };
     document.querySelectorAll(".theme-chip").forEach((chip) => {
-      chip.onclick = () => { settings.theme = chip.dataset.theme; applyTheme(); };
+      chip.onclick = () => {
+        settings.theme = chip.dataset.theme || "light";
+        applyTheme();
+      };
     });
-
     $("btnCmdPalette2").onclick = openCmd;
-
-    // Toolbar
     titleInput.addEventListener("input", () => {
       const active = getActive();
       if (!active) return;
       updateNote(active.id, { title: titleInput.value });
       renderNotesList();
     });
-
     $("btnUndo").onclick = () => exec("undo");
     $("btnRedo").onclick = () => exec("redo");
-    document.querySelectorAll("[data-cmd]").forEach((b) => { b.onclick = () => exec(b.dataset.cmd); });
-    document.querySelectorAll("[data-block]").forEach((b) => { b.onclick = () => exec("formatBlock", b.dataset.block); });
+    document.querySelectorAll("[data-cmd]").forEach((b) => {
+      b.onclick = () => exec(b.dataset.cmd || "");
+    });
+    document.querySelectorAll("[data-block]").forEach((b) => {
+      b.onclick = () => exec("formatBlock", b.dataset.block);
+    });
     $("btnHr").onclick = () => exec("insertHorizontalRule");
-
-    // Color popover
-    const colorPopover = $("colorPopover");
-    $("btnColor").onclick = (e) => { e.stopPropagation(); colorPopover.classList.toggle("hidden"); };
+    floatingScrim = document.createElement("div");
+    floatingScrim.className = "floating-scrim";
+    document.body.appendChild(floatingScrim);
+    floatingScrim.addEventListener("click", closeAllFloating);
+    const colorPopover = registerFloatingMenu("btnColor", "colorPopover");
+    const moreMenu = registerFloatingMenu("btnMore", "moreMenu");
+    const textColorPopover = registerFloatingMenu("btnTextColor", "textColorPopover");
+    const fontSizeMenu = registerFloatingMenu("btnFontSize", "fontSizeMenu");
+    const insertMenu = registerFloatingMenu("btnInsert", "insertMenu");
     colorPopover.querySelectorAll(".swatch").forEach((sw) => {
       sw.onclick = () => {
         const active = getActive();
-        if (active) setColor(active.id, sw.dataset.color);
-        colorPopover.classList.add("hidden");
+        if (active) setColor(active.id, sw.dataset.color || "");
+        closeAllFloating();
       };
     });
-
-    $("btnPin").onclick = () => { const a = getActive(); if (a) togglePin(a.id); };
-    $("btnFav").onclick = () => { const a = getActive(); if (a) toggleFav(a.id); };
-    $("btnPreview").onclick = () => { viewOnly = !viewOnly; renderEditorArea(); updateToolbarActiveStates(); };
+    textColorPopover.querySelectorAll(".swatch").forEach((sw) => {
+      sw.onclick = () => {
+        wrapSelectionWithStyle("color", sw.dataset.tcolor || "inherit");
+        closeAllFloating();
+      };
+    });
+    fontSizeMenu.querySelectorAll("[data-fsize]").forEach((b) => {
+      b.onclick = () => {
+        wrapSelectionWithStyle("font-size", b.dataset.fsize || "15px");
+        closeAllFloating();
+      };
+    });
+    $("mInsertLink").onclick = () => {
+      closeAllFloating();
+      const url = prompt("Link URL (https://\u2026)");
+      if (!url) return;
+      editor.focus();
+      const sel = window.getSelection();
+      if (sel && !sel.isCollapsed && editor.contains(sel.anchorNode)) {
+        document.execCommand("createLink", false, url);
+      } else {
+        document.execCommand("insertHTML", false, `<a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(url)}</a>`);
+      }
+      onEditorInput();
+    };
+    $("mInsertImage").onclick = () => {
+      closeAllFloating();
+      const url = prompt("Image URL (https://\u2026)");
+      if (!url) return;
+      editor.focus();
+      document.execCommand("insertImage", false, url);
+      onEditorInput();
+    };
+    $("mInsertChecklist").onclick = () => {
+      closeAllFloating();
+      if (viewOnly) return;
+      editor.focus();
+      document.execCommand("insertHTML", false, '<ul class="checklist"><li><label><input type="checkbox"> Untitled task</label></li></ul><p><br></p>');
+      onEditorInput();
+    };
+    $("btnPin").onclick = () => {
+      const a = getActive();
+      if (a) togglePin(a.id);
+    };
+    $("btnFav").onclick = () => {
+      const a = getActive();
+      if (a) toggleFav(a.id);
+    };
+    $("btnPreview").onclick = () => {
+      viewOnly = !viewOnly;
+      renderEditorArea();
+      updateToolbarActiveStates();
+    };
     $("btnHistory").onclick = openHistory;
     $("btnCloseHistory").onclick = () => historyOverlay.classList.add("hidden");
-    historyOverlay.onclick = (e) => { if (e.target === historyOverlay) historyOverlay.classList.add("hidden"); };
-
-    // More menu
-    const moreMenu = $("moreMenu");
-    $("btnMore").onclick = (e) => { e.stopPropagation(); moreMenu.classList.toggle("hidden"); };
-    $("mExportTxt").onclick = () => { const a = getActive(); if (a) exportNote(a, "txt"); moreMenu.classList.add("hidden"); };
-    $("mExportMd").onclick = () => { const a = getActive(); if (a) exportNote(a, "md"); moreMenu.classList.add("hidden"); };
-    $("mExportJson").onclick = () => { const a = getActive(); if (a) exportNote(a, "json"); moreMenu.classList.add("hidden"); };
-    $("mExportAll").onclick = () => { exportAll(); moreMenu.classList.add("hidden"); };
-    $("mImport").onclick = () => { importFileInput.click(); moreMenu.classList.add("hidden"); };
-    $("mZen").onclick = () => { zen = !zen; renderAll(); moreMenu.classList.add("hidden"); };
-    $("mFocus").onclick = () => { focusMode = !focusMode; renderAll(); moreMenu.classList.add("hidden"); };
-    $("mFullscreen").onclick = () => { toggleFullscreen(); moreMenu.classList.add("hidden"); };
-
+    historyOverlay.onclick = (e) => {
+      if (e.target === historyOverlay) historyOverlay.classList.add("hidden");
+    };
+    $("mExportTxt").onclick = () => {
+      const a = getActive();
+      if (a) exportNote(a, "txt");
+      closeAllFloating();
+    };
+    $("mExportMd").onclick = () => {
+      const a = getActive();
+      if (a) exportNote(a, "md");
+      closeAllFloating();
+    };
+    $("mExportJson").onclick = () => {
+      const a = getActive();
+      if (a) exportNote(a, "json");
+      closeAllFloating();
+    };
+    $("mExportPdf").onclick = () => {
+      closeAllFloating();
+      const active = getActive();
+      if (!active) return;
+      const prevTitle = document.title;
+      document.title = (active.title || "Untitled") + " \u2014 TinyNote";
+      document.body.classList.add("printing-note");
+      window.print();
+      setTimeout(() => {
+        document.body.classList.remove("printing-note");
+        document.title = prevTitle;
+      }, 400);
+    };
+    $("mExportAll").onclick = () => {
+      exportAll();
+      closeAllFloating();
+    };
+    $("mImport").onclick = () => {
+      importFileInput.click();
+      closeAllFloating();
+    };
+    $("mZen").onclick = () => {
+      zen = !zen;
+      renderAll();
+      closeAllFloating();
+    };
+    $("mFocus").onclick = () => {
+      focusMode = !focusMode;
+      renderAll();
+      closeAllFloating();
+    };
+    $("mFullscreen").onclick = () => {
+      toggleFullscreen();
+      closeAllFloating();
+    };
+    $("btnCopyAll").onclick = async () => {
+      const active = getActive();
+      if (!active) return;
+      const text = stripHtml(active.content);
+      const flash = () => {
+        const btn = $("btnCopyAll");
+        btn.classList.add("fab-success");
+        setTimeout(() => btn.classList.remove("fab-success"), 900);
+      };
+      try {
+        await navigator.clipboard.writeText(text);
+        flash();
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand("copy");
+          flash();
+        } catch {
+        }
+        ta.remove();
+      }
+    };
+    $("btnDeleteAll").onclick = () => {
+      var _a;
+      const active = getActive();
+      if (!active || viewOnly) return;
+      if (!active.content.trim() && !((_a = editor.textContent) == null ? void 0 : _a.trim())) return;
+      if (!confirm("Delete all text in this note? This can't be undone.")) return;
+      editor.innerHTML = "";
+      updateNote(active.id, { content: "" });
+      editor.setAttribute("data-empty", "Start writing\u2026");
+      renderNotesList();
+      renderStatsOnly();
+      editor.focus();
+    };
     importFileInput.addEventListener("change", (e) => {
       const files = e.target.files;
       if (files) Array.from(files).forEach((f) => importFile(f));
       e.target.value = "";
     });
-
-    document.addEventListener("click", () => {
-      colorPopover.classList.add("hidden");
-      moreMenu.classList.add("hidden");
-    });
-
+    document.addEventListener("click", closeAllFloating);
+    window.addEventListener("resize", closeAllFloating);
     editor.addEventListener("input", onEditorInput);
     editor.addEventListener("keyup", updateToolbarActiveStates);
     editor.addEventListener("mouseup", updateToolbarActiveStates);
     editor.addEventListener("focus", updateToolbarActiveStates);
     editor.addEventListener("blur", updateToolbarActiveStates);
     document.addEventListener("selectionchange", updateToolbarActiveStates);
-
-    // Keep the selection alive when clicking a toolbar button so formatting
-    // is applied to the text the user actually selected.
     document.querySelectorAll(".toolbar .tool-btn").forEach((b) => {
       b.addEventListener("mousedown", (e) => e.preventDefault());
     });
-
-    // Command palette
     cmdInput.addEventListener("input", (e) => renderCmd(e.target.value));
-    cmdOverlay.addEventListener("click", (e) => { if (e.target === cmdOverlay) closeCmd(); });
-
-    // Sidebar resize
+    cmdOverlay.addEventListener("click", (e) => {
+      if (e.target === cmdOverlay) closeCmd();
+    });
     const resizeHandle = $("resizeHandle");
-    resizeHandle.addEventListener("mousedown", () => { resizing = true; });
+    resizeHandle.addEventListener("mousedown", () => {
+      resizing = true;
+    });
     window.addEventListener("mousemove", (e) => {
       if (!resizing) return;
       const w = Math.max(220, Math.min(480, e.clientX));
@@ -832,31 +1133,57 @@
       sidebar.style.width = w + "px";
     });
     window.addEventListener("mouseup", () => {
-      if (resizing) { resizing = false; saveSettings(settings); }
+      if (resizing) {
+        resizing = false;
+        saveSettings(settings);
+      }
     });
-
-    // Keyboard shortcuts
     window.addEventListener("keydown", (e) => {
       const mod = e.ctrlKey || e.metaKey;
-      if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); cmdOverlay.classList.contains("hidden") ? openCmd() : closeCmd(); return; }
-      if (mod && e.key.toLowerCase() === "n") { e.preventDefault(); newNote(); return; }
-      if (mod && e.key.toLowerCase() === "f") { e.preventDefault(); searchInput.focus(); return; }
-      if (mod && e.key.toLowerCase() === "d") { e.preventDefault(); duplicateNote(); return; }
-      if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); const a = getActive(); if (a) exportNote(a, "md"); return; }
-      if (e.key === "Escape") { closeCmd(); historyOverlay.classList.add("hidden"); }
+      if (mod && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        cmdOverlay.classList.contains("hidden") ? openCmd() : closeCmd();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "n") {
+        e.preventDefault();
+        newNote();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "f") {
+        e.preventDefault();
+        searchInput.focus();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "d") {
+        e.preventDefault();
+        duplicateNote();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        const a = getActive();
+        if (a) exportNote(a, "md");
+        return;
+      }
+      if (e.key === "Escape") {
+        closeCmd();
+        historyOverlay.classList.add("hidden");
+        closeAllFloating();
+      }
     });
-
     document.addEventListener("fullscreenchange", () => {
       $("fsLabel").textContent = document.fullscreenElement ? "Exit fullscreen" : "Fullscreen";
     });
-
-    $("btnMobileBack").onclick = () => { mobileEditorOpen = false; renderMobileLayout(); };
-    mobileMql.addEventListener("change", (e) => { isMobile = e.matches; renderMobileLayout(); });
-
-    // Drag-and-drop file import: dragging a .txt/.md/.json file anywhere onto
-    // the app imports it as a new note, with a full-screen visual cue.
+    $("btnMobileBack").onclick = () => {
+      mobileEditorOpen = false;
+      renderMobileLayout();
+    };
+    mobileMql.addEventListener("change", (e) => {
+      isMobile = e.matches;
+      renderMobileLayout();
+    });
     const hasFiles = (e) => !!e.dataTransfer && Array.from(e.dataTransfer.types).includes("Files");
-
     window.addEventListener("dragenter", (e) => {
       if (!hasFiles(e)) return;
       e.preventDefault();
@@ -881,6 +1208,5 @@
       files.forEach((f) => importFile(f));
     });
   }
-
   init();
 })();
