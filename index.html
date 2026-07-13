@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TinyNote — Fast, private, offline notes</title>
+<meta name="description" content="TinyNote is a fast, private, offline-first notepad. Every keystroke saves locally." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%8D%EF%B8%8F%3C/text%3E%3C/svg%3E">
+</head>
+<body>
+
+<!-- Mobile Backdrop -->
+<div id="backdrop" class="backdrop hidden"></div>
+
+<div id="app" class="app">
+
+  <!-- Sidebar -->
+  <aside class="sidebar glass" id="sidebar">
+    <div class="brand">
+      <div class="logo">✍️</div>
+      <div>
+        <div class="brand-name">TinyNote</div>
+        <div class="brand-tag">fast · private</div>
+      </div>
+      <button class="icon-btn sidebar-close" id="sidebarClose" aria-label="Close sidebar">✕</button>
+    </div>
+
+    <div class="sidebar-actions">
+      <button class="btn btn-primary" id="newNoteBtn">＋ New note</button>
+      <button class="icon-btn" id="cmdPaletteBtn" title="Command palette (Ctrl+K)">⌘</button>
+    </div>
+
+    <div class="search-wrap">
+      <input id="searchInput" class="input" type="text" placeholder="Search notes…" />
+    </div>
+
+    <div class="filter-chips">
+      <button class="chip active" data-filter="all">All</button>
+      <button class="chip" data-filter="pinned">📌 Pinned</button>
+      <button class="chip" data-filter="favorite">★ Favorite</button>
+      <button class="chip" data-filter="trash">🗑 Trash</button>
+    </div>
+
+    <div class="notes-list scroll-thin" id="notesList"></div>
+
+    <div class="sidebar-foot">
+      <select id="sortBy" class="input small">
+        <option value="updated">Recently updated</option>
+        <option value="created">Recently created</option>
+        <option value="name">Name (A-Z)</option>
+      </select>
+      <div class="theme-picker">
+        <button class="theme-dot" data-theme="light" title="Light" style="background:#f8f5ee"></button>
+        <button class="theme-dot" data-theme="dark" title="Dark" style="background:#1a1830"></button>
+        <button class="theme-dot" data-theme="amoled" title="AMOLED" style="background:#000"></button>
+        <button class="theme-dot" data-theme="sepia" title="Sepia" style="background:#e8dcc0"></button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <!-- Header -->
+    <header class="header glass">
+      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
+      <input id="titleInput" class="title-input" type="text" placeholder="Untitled note" />
+      <div class="header-actions">
+        <button class="icon-btn" id="pinBtn" title="Pin (Ctrl+P)">📌</button>
+        <button class="icon-btn" id="favBtn" title="Favorite">★</button>
+        <button class="icon-btn" id="focusBtn" title="Focus mode">🎯</button>
+        <button class="icon-btn" id="zenBtn" title="Zen mode (F11)">⛶</button>
+
+        <!-- 3-dot menu -->
+        <div class="menu-wrap">
+          <button class="icon-btn" id="moreBtn" aria-label="More" title="More">⋮</button>
+          <div class="menu-panel glass" id="morePanel" role="menu">
+            <div class="menu-section-title">Export</div>
+            <button class="menu-item" data-action="export-txt">📄 Export as TXT</button>
+            <button class="menu-item" data-action="export-md">📝 Export as Markdown</button>
+            <button class="menu-item" data-action="export-html">🌐 Export as HTML</button>
+            <button class="menu-item" data-action="export-pdf">📕 Export as PDF</button>
+            <button class="menu-item" data-action="export-json">🧾 Export as JSON</button>
+            <div class="menu-sep"></div>
+            <div class="menu-section-title">Import</div>
+            <button class="menu-item" data-action="import">📥 Import file…</button>
+            <div class="menu-sep"></div>
+            <div class="menu-section-title">Actions</div>
+            <button class="menu-item" data-action="duplicate">🧬 Duplicate</button>
+            <button class="menu-item" data-action="print">🖨 Print</button>
+            <button class="menu-item danger" data-action="trash">🗑 Move to Trash</button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Toolbar -->
+    <div class="toolbar glass" id="toolbar">
+      <select class="tb-select" id="blockStyle" title="Block style">
+        <option value="p">Paragraph</option>
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+        <option value="blockquote">Quote</option>
+        <option value="pre">Code block</option>
+      </select>
+      <select class="tb-select" id="fontFamily" title="Font">
+        <option value="">Default</option>
+        <option value="Inter">Inter</option>
+        <option value="Fraunces">Fraunces</option>
+        <option value="Georgia">Georgia</option>
+        <option value="Arial">Arial</option>
+        <option value="Times New Roman">Times</option>
+        <option value="Courier New">Courier</option>
+      </select>
+      <select class="tb-select narrow" id="fontSize" title="Size">
+        <option value="">Size</option>
+        <option value="1">10</option>
+        <option value="2">12</option>
+        <option value="3">14</option>
+        <option value="4">16</option>
+        <option value="5">20</option>
+        <option value="6">24</option>
+        <option value="7">32</option>
+      </select>
+      <span class="tb-sep"></span>
+      <button class="tb-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+      <button class="tb-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+      <button class="tb-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+      <button class="tb-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
+      <span class="tb-sep"></span>
+      <label class="tb-btn color-btn" title="Text color">A<input type="color" id="foreColor" /></label>
+      <label class="tb-btn color-btn hl" title="Highlight">▮<input type="color" id="hiliteColor" value="#ffe066" /></label>
+      <span class="tb-sep"></span>
+      <button class="tb-btn" data-cmd="insertUnorderedList" title="Bullet list">•—</button>
+      <button class="tb-btn" data-cmd="insertOrderedList" title="Numbered list">1.</button>
+      <button class="tb-btn" data-cmd="indent" title="Indent">→|</button>
+      <button class="tb-btn" data-cmd="outdent" title="Outdent">|←</button>
+      <span class="tb-sep"></span>
+      <button class="tb-btn" data-cmd="justifyLeft" title="Align left">⯇</button>
+      <button class="tb-btn" data-cmd="justifyCenter" title="Center">≡</button>
+      <button class="tb-btn" data-cmd="justifyRight" title="Right">⯈</button>
+      <span class="tb-sep"></span>
+      <button class="tb-btn" id="insertLink" title="Link (Ctrl+K)">🔗</button>
+      <button class="tb-btn" id="insertImage" title="Image">🖼</button>
+      <button class="tb-btn" id="insertTable" title="Table">▦</button>
+      <button class="tb-btn" data-cmd="insertHorizontalRule" title="Divider">—</button>
+      <button class="tb-btn" id="insertChecklist" title="Checklist">☑</button>
+      <span class="tb-sep"></span>
+      <button class="tb-btn" data-cmd="undo" title="Undo (Ctrl+Z)">↶</button>
+      <button class="tb-btn" data-cmd="redo" title="Redo (Ctrl+Y)">↷</button>
+      <button class="tb-btn" data-cmd="removeFormat" title="Clear formatting">⌫</button>
+    </div>
+
+    <!-- Editor -->
+    <section class="editor-wrap">
+      <div id="editor" class="editor-content" contenteditable="true" spellcheck="true" data-empty="Start typing… every keystroke saves."></div>
+
+      <!-- Floating action buttons (bottom-right) -->
+      <div class="fab-group" id="fabGroup">
+        <button class="fab" id="copyAllBtn" title="Copy all text">📋</button>
+        <button class="fab danger" id="deleteAllBtn" title="Delete all text">🧹</button>
+      </div>
+    </section>
+
+    <!-- Status bar -->
+    <footer class="status glass">
+      <div class="status-left">
+        <span id="saveState">● Saved</span>
+      </div>
+      <div class="status-right">
+        <span id="stats">0 words · 0 chars · 1 min read</span>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<!-- Drag & drop overlay -->
+<div id="dropOverlay" class="drop-overlay hidden">
+  <div class="drop-inner glass-strong">
+    <div class="drop-icon">📥</div>
+    <div class="drop-title">Drop to import</div>
+    <div class="drop-sub">.txt · .md · .html · .json</div>
+  </div>
+</div>
+
+<!-- Command palette -->
+<div id="cmdPalette" class="cmd-palette hidden">
+  <div class="cmd-inner glass-strong">
+    <input id="cmdInput" type="text" placeholder="Type a command or search notes…" />
+    <div id="cmdResults" class="cmd-results scroll-thin"></div>
+  </div>
+</div>
+
+<!-- Toasts -->
+<div id="toasts" class="toasts"></div>
+
+<!-- Hidden file input -->
+<input type="file" id="fileInput" accept=".txt,.md,.markdown,.html,.json" hidden />
+
+<script src="app.js"></script>
+</body>
+</html>
