@@ -3,204 +3,245 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>TinyNote — Fast, private, offline notes</title>
-<meta name="description" content="TinyNote is a fast, private, offline-first notepad. Every keystroke saves locally." />
+<title>TinyNote</title>
+<meta name="description" content="TinyNote — a private, fast notepad. Nothing leaves your device." />
+<link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css" />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%E2%9C%8D%EF%B8%8F%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-<!-- Mobile Backdrop -->
-<div id="backdrop" class="backdrop hidden"></div>
+<div id="app" class="app-root">
 
-<div id="app" class="app">
-
-  <!-- Sidebar -->
-  <aside class="sidebar glass" id="sidebar">
-    <div class="brand">
-      <div class="logo">✍️</div>
-      <div>
-        <div class="brand-name">TinyNote</div>
-        <div class="brand-tag">fast · private</div>
+  <!-- SIDEBAR -->
+  <aside class="sidebar glass-strong" id="sidebar">
+    <div class="sidebar-head">
+      <div class="brand-mark shine"><svg viewBox="0 0 24 24" class="icon"><use href="#i-feather"/></svg></div>
+      <div class="brand-text">
+        <div class="brand-title">TinyNote</div>
+        <div class="brand-sub">private · fast</div>
       </div>
-      <button class="icon-btn sidebar-close" id="sidebarClose" aria-label="Close sidebar">✕</button>
+      <button class="btn-icon ml-auto" id="btnNewNoteTop" title="New note (⌘N)" aria-label="New note">
+        <svg viewBox="0 0 24 24" class="icon"><use href="#i-plus"/></svg>
+      </button>
     </div>
 
-    <div class="sidebar-actions">
-      <button class="btn btn-primary" id="newNoteBtn">＋ New note</button>
-      <button class="icon-btn" id="cmdPaletteBtn" title="Command palette (Ctrl+K)">⌘</button>
+    <div class="sidebar-search-wrap">
+      <div class="search-box glass">
+        <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-search"/></svg>
+        <input id="searchInput" class="search-input" placeholder="Search notes…" aria-label="Search notes" />
+        <button id="btnClearSearch" class="hidden" aria-label="Clear">
+          <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-x"/></svg>
+        </button>
+      </div>
+      <div id="recentSearches" class="recent-searches"></div>
     </div>
 
-    <div class="search-wrap">
-      <input id="searchInput" class="input" type="text" placeholder="Search notes…" />
-    </div>
-
-    <div class="filter-chips">
-      <button class="chip active" data-filter="all">All</button>
-      <button class="chip" data-filter="pinned">📌 Pinned</button>
-      <button class="chip" data-filter="favorite">★ Favorite</button>
-      <button class="chip" data-filter="trash">🗑 Trash</button>
+    <div class="sidebar-tabs">
+      <button id="tabAll" class="tab-btn tab-active">All</button>
+      <button id="tabTrash" class="tab-btn">Trash</button>
+      <div class="ml-auto sort-wrap">
+        <svg viewBox="0 0 24 24" class="icon icon-xs muted"><use href="#i-sort"/></svg>
+        <select id="sortSelect" class="sort-select" aria-label="Sort by">
+          <option value="updated">Updated</option>
+          <option value="created">Created</option>
+          <option value="name">Name</option>
+        </select>
+      </div>
     </div>
 
     <div class="notes-list scroll-thin" id="notesList"></div>
 
-    <div class="sidebar-foot">
-      <select id="sortBy" class="input small">
-        <option value="updated">Recently updated</option>
-        <option value="created">Recently created</option>
-        <option value="name">Name (A-Z)</option>
-      </select>
-      <div class="theme-picker">
-        <button class="theme-dot" data-theme="light" title="Light" style="background:#f8f5ee"></button>
-        <button class="theme-dot" data-theme="dark" title="Dark" style="background:#1a1830"></button>
-        <button class="theme-dot" data-theme="amoled" title="AMOLED" style="background:#000"></button>
-        <button class="theme-dot" data-theme="sepia" title="Sepia" style="background:#e8dcc0"></button>
-      </div>
+    <div class="theme-row">
+      <button class="theme-chip" data-theme="light" title="light" aria-label="light theme">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-sun"/></svg><span class="theme-label">light</span>
+      </button>
+      <button class="theme-chip" data-theme="dark" title="dark" aria-label="dark theme">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-moon"/></svg><span class="theme-label">dark</span>
+      </button>
+      <button class="theme-chip" data-theme="amoled" title="amoled" aria-label="amoled theme">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-contrast"/></svg><span class="theme-label">amoled</span>
+      </button>
+      <button class="theme-chip" data-theme="sepia" title="sepia" aria-label="sepia theme">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-book"/></svg><span class="theme-label">sepia</span>
+      </button>
+      <button class="btn-icon ml-auto" id="btnCmdPalette2" title="Command palette (⌘K)" aria-label="Command palette">
+        <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-command"/></svg>
+      </button>
     </div>
+
+    <div class="resize-handle" id="resizeHandle" aria-hidden="true"></div>
   </aside>
 
-  <!-- Main -->
-  <main class="main">
-    <!-- Header -->
-    <header class="header glass">
-      <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu">☰</button>
-      <input id="titleInput" class="title-input" type="text" placeholder="Untitled note" />
-      <div class="header-actions">
-        <button class="icon-btn" id="pinBtn" title="Pin (Ctrl+P)">📌</button>
-        <button class="icon-btn" id="favBtn" title="Favorite">★</button>
-        <button class="icon-btn" id="focusBtn" title="Focus mode">🎯</button>
-        <button class="icon-btn" id="zenBtn" title="Zen mode (F11)">⛶</button>
+  <!-- MAIN -->
+  <main class="main-panel" id="mainPanel">
 
-        <!-- 3-dot menu -->
-        <div class="menu-wrap">
-          <button class="icon-btn" id="moreBtn" aria-label="More" title="More">⋮</button>
-          <div class="menu-panel glass" id="morePanel" role="menu">
-            <div class="menu-section-title">Export</div>
-            <button class="menu-item" data-action="export-txt">📄 Export as TXT</button>
-            <button class="menu-item" data-action="export-md">📝 Export as Markdown</button>
-            <button class="menu-item" data-action="export-html">🌐 Export as HTML</button>
-            <button class="menu-item" data-action="export-pdf">📕 Export as PDF</button>
-            <button class="menu-item" data-action="export-json">🧾 Export as JSON</button>
-            <div class="menu-sep"></div>
-            <div class="menu-section-title">Import</div>
-            <button class="menu-item" data-action="import">📥 Import file…</button>
-            <div class="menu-sep"></div>
-            <div class="menu-section-title">Actions</div>
-            <button class="menu-item" data-action="duplicate">🧬 Duplicate</button>
-            <button class="menu-item" data-action="print">🖨 Print</button>
-            <button class="menu-item danger" data-action="trash">🗑 Move to Trash</button>
+    <div id="editorView" class="editor-view hidden">
+      <!-- Toolbar -->
+      <div class="toolbar glass-strong scroll-x-thin">
+        <button class="tool-btn mobile-back-btn" id="btnMobileBack" title="Back to notes" aria-label="Back to notes"><svg viewBox="0 0 24 24" class="icon"><use href="#i-arrow-left"/></svg></button>
+        <input id="titleInput" class="title-input" placeholder="Untitled" aria-label="Note title" />
+
+        <div class="tool-group">
+          <button class="tool-btn" id="btnUndo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-undo"/></svg></button>
+          <button class="tool-btn" id="btnRedo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-redo"/></svg></button>
+        </div>
+        <div class="tool-group">
+          <button class="tool-btn" data-cmd="bold" title="Bold (⌘B)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-bold"/></svg></button>
+          <button class="tool-btn" data-cmd="italic" title="Italic (⌘I)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-italic"/></svg></button>
+          <button class="tool-btn" data-cmd="underline" title="Underline"><svg viewBox="0 0 24 24" class="icon"><use href="#i-underline"/></svg></button>
+        </div>
+        <div class="tool-group">
+          <button class="tool-btn" data-block="H1" title="Heading 1"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h1"/></svg></button>
+          <button class="tool-btn" data-block="H2" title="Heading 2"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h2"/></svg></button>
+          <button class="tool-btn" data-block="H3" title="Heading 3"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h3"/></svg></button>
+        </div>
+        <div class="tool-group">
+          <button class="tool-btn" data-cmd="insertUnorderedList" title="Bulleted list"><svg viewBox="0 0 24 24" class="icon"><use href="#i-list"/></svg></button>
+          <button class="tool-btn" data-cmd="insertOrderedList" title="Numbered list"><svg viewBox="0 0 24 24" class="icon"><use href="#i-list-ordered"/></svg></button>
+          <button class="tool-btn" data-block="BLOCKQUOTE" title="Quote"><svg viewBox="0 0 24 24" class="icon"><use href="#i-quote"/></svg></button>
+          <button class="tool-btn" data-block="PRE" title="Code block"><svg viewBox="0 0 24 24" class="icon"><use href="#i-code"/></svg></button>
+          <button class="tool-btn" id="btnHr" title="Divider"><svg viewBox="0 0 24 24" class="icon"><use href="#i-minus"/></svg></button>
+        </div>
+        <div class="tool-group">
+          <div class="popover-wrap" id="colorPopoverWrap">
+            <button class="tool-btn" id="btnColor" title="Label color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-palette"/></svg></button>
+            <div class="popover glass-strong hidden" id="colorPopover">
+              <button class="swatch swatch-clear" data-color="" title="Clear">✕</button>
+              <button class="swatch" data-color="oklch(0.82 0.15 75)" style="background:oklch(0.82 0.15 75)" aria-label="amber"></button>
+              <button class="swatch" data-color="oklch(0.75 0.17 15)" style="background:oklch(0.75 0.17 15)" aria-label="rose"></button>
+              <button class="swatch" data-color="oklch(0.72 0.15 155)" style="background:oklch(0.72 0.15 155)" aria-label="emerald"></button>
+              <button class="swatch" data-color="oklch(0.75 0.13 230)" style="background:oklch(0.75 0.13 230)" aria-label="sky"></button>
+              <button class="swatch" data-color="oklch(0.7 0.17 300)" style="background:oklch(0.7 0.17 300)" aria-label="violet"></button>
+            </div>
           </div>
+          <button class="tool-btn" id="btnPin" title="Pin"><svg viewBox="0 0 24 24" class="icon"><use href="#i-pin"/></svg></button>
+          <button class="tool-btn" id="btnFav" title="Favorite"><svg viewBox="0 0 24 24" class="icon"><use href="#i-star"/></svg></button>
+          <button class="tool-btn" id="btnPreview" title="View mode (read-only)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-eye"/></svg></button>
+          <button class="tool-btn" id="btnHistory" title="Version history"><svg viewBox="0 0 24 24" class="icon"><use href="#i-history"/></svg></button>
+        </div>
+        <div class="tool-group tool-group-last">
+          <div class="popover-wrap" id="moreMenuWrap">
+            <button class="tool-btn" id="btnMore" title="More"><svg viewBox="0 0 24 24" class="icon"><use href="#i-more"/></svg></button>
+            <div class="menu glass-strong hidden" id="moreMenu">
+              <button class="menu-item" id="mExportTxt"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .txt</button>
+              <button class="menu-item" id="mExportMd"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .md</button>
+              <button class="menu-item" id="mExportJson"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .json</button>
+              <button class="menu-item" id="mExportAll"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export all (backup)</button>
+              <button class="menu-item" id="mImport"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-upload"/></svg>Import file…</button>
+              <button class="menu-item" id="mZen"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-feather"/></svg>Toggle Zen mode</button>
+              <button class="menu-item" id="mFocus"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-palette"/></svg>Toggle Focus mode</button>
+              <button class="menu-item" id="mFullscreen"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-maximize"/></svg><span id="fsLabel">Fullscreen</span></button>
+            </div>
+          </div>
+          <input type="file" id="importFileInput" accept=".txt,.md,.json" class="hidden" multiple />
         </div>
       </div>
-    </header>
 
-    <!-- Toolbar -->
-    <div class="toolbar glass" id="toolbar">
-      <select class="tb-select" id="blockStyle" title="Block style">
-        <option value="p">Paragraph</option>
-        <option value="h1">Heading 1</option>
-        <option value="h2">Heading 2</option>
-        <option value="h3">Heading 3</option>
-        <option value="blockquote">Quote</option>
-        <option value="pre">Code block</option>
-      </select>
-      <select class="tb-select" id="fontFamily" title="Font">
-        <option value="">Default</option>
-        <option value="Inter">Inter</option>
-        <option value="Fraunces">Fraunces</option>
-        <option value="Georgia">Georgia</option>
-        <option value="Arial">Arial</option>
-        <option value="Times New Roman">Times</option>
-        <option value="Courier New">Courier</option>
-      </select>
-      <select class="tb-select narrow" id="fontSize" title="Size">
-        <option value="">Size</option>
-        <option value="1">10</option>
-        <option value="2">12</option>
-        <option value="3">14</option>
-        <option value="4">16</option>
-        <option value="5">20</option>
-        <option value="6">24</option>
-        <option value="7">32</option>
-      </select>
-      <span class="tb-sep"></span>
-      <button class="tb-btn" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
-      <button class="tb-btn" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
-      <button class="tb-btn" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
-      <button class="tb-btn" data-cmd="strikeThrough" title="Strikethrough"><s>S</s></button>
-      <span class="tb-sep"></span>
-      <label class="tb-btn color-btn" title="Text color">A<input type="color" id="foreColor" /></label>
-      <label class="tb-btn color-btn hl" title="Highlight">▮<input type="color" id="hiliteColor" value="#ffe066" /></label>
-      <span class="tb-sep"></span>
-      <button class="tb-btn" data-cmd="insertUnorderedList" title="Bullet list">•—</button>
-      <button class="tb-btn" data-cmd="insertOrderedList" title="Numbered list">1.</button>
-      <button class="tb-btn" data-cmd="indent" title="Indent">→|</button>
-      <button class="tb-btn" data-cmd="outdent" title="Outdent">|←</button>
-      <span class="tb-sep"></span>
-      <button class="tb-btn" data-cmd="justifyLeft" title="Align left">⯇</button>
-      <button class="tb-btn" data-cmd="justifyCenter" title="Center">≡</button>
-      <button class="tb-btn" data-cmd="justifyRight" title="Right">⯈</button>
-      <span class="tb-sep"></span>
-      <button class="tb-btn" id="insertLink" title="Link (Ctrl+K)">🔗</button>
-      <button class="tb-btn" id="insertImage" title="Image">🖼</button>
-      <button class="tb-btn" id="insertTable" title="Table">▦</button>
-      <button class="tb-btn" data-cmd="insertHorizontalRule" title="Divider">—</button>
-      <button class="tb-btn" id="insertChecklist" title="Checklist">☑</button>
-      <span class="tb-sep"></span>
-      <button class="tb-btn" data-cmd="undo" title="Undo (Ctrl+Z)">↶</button>
-      <button class="tb-btn" data-cmd="redo" title="Redo (Ctrl+Y)">↷</button>
-      <button class="tb-btn" data-cmd="removeFormat" title="Clear formatting">⌫</button>
+      <!-- Editor / Preview -->
+      <div class="editor-scroll scroll-thin">
+        <div class="editor-inner">
+          <div id="editor" class="editor-content" contenteditable="true" spellcheck="true" role="textbox" aria-label="Note content" data-empty="Start writing…"></div>
+        </div>
+      </div>
+
+      <!-- Status bar -->
+      <div class="status-bar glass">
+        <span id="statWords">0 words</span>
+        <span id="statChars">0 chars</span>
+        <span id="statRead">~1 min read</span>
+        <span class="ml-auto" id="statSaved"></span>
+        <span id="statEdited">Edited just now</span>
+      </div>
     </div>
 
-    <!-- Editor -->
-    <section class="editor-wrap">
-      <div id="editor" class="editor-content" contenteditable="true" spellcheck="true" data-empty="Start typing… every keystroke saves."></div>
+    <!-- Empty state -->
+    <div id="emptyState" class="empty-state">
+      <div class="empty-icon shine"><svg viewBox="0 0 24 24" class="icon icon-lg"><use href="#i-feather"/></svg></div>
+      <h1 class="empty-title">A private place to think.</h1>
+      <p class="empty-sub">TinyNote is a private, fast notepad. Nothing leaves this device — write freely, anytime.</p>
+      <button id="btnEmptyNew" class="btn-primary">Create your first note</button>
+    </div>
 
-      <!-- Floating action buttons (bottom-right) -->
-      <div class="fab-group" id="fabGroup">
-        <button class="fab" id="copyAllBtn" title="Copy all text">📋</button>
-        <button class="fab danger" id="deleteAllBtn" title="Delete all text">🧹</button>
+    <!-- History panel -->
+    <div id="historyOverlay" class="overlay overlay-end hidden">
+      <div class="history-panel glass-strong" id="historyPanelInner">
+        <div class="history-head">
+          <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-history"/></svg>
+          <div class="history-title">Version history</div>
+          <button class="btn-icon ml-auto" id="btnCloseHistory" aria-label="Close"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-x"/></svg></button>
+        </div>
+        <div class="history-body scroll-thin" id="historyBody"></div>
       </div>
-    </section>
-
-    <!-- Status bar -->
-    <footer class="status glass">
-      <div class="status-left">
-        <span id="saveState">● Saved</span>
-      </div>
-      <div class="status-right">
-        <span id="stats">0 words · 0 chars · 1 min read</span>
-      </div>
-    </footer>
+    </div>
   </main>
-</div>
 
-<!-- Drag & drop overlay -->
-<div id="dropOverlay" class="drop-overlay hidden">
-  <div class="drop-inner glass-strong">
-    <div class="drop-icon">📥</div>
-    <div class="drop-title">Drop to import</div>
-    <div class="drop-sub">.txt · .md · .html · .json</div>
+  <!-- Command palette -->
+  <div id="cmdOverlay" class="overlay overlay-top hidden">
+    <div class="cmd-palette glass-strong anim-float" id="cmdPaletteInner">
+      <div class="cmd-head">
+        <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-command"/></svg>
+        <input id="cmdInput" class="cmd-input" placeholder="Type a command or search notes…" autofocus />
+        <kbd class="kbd">Esc</kbd>
+      </div>
+      <div class="cmd-body scroll-thin" id="cmdBody"></div>
+    </div>
   </div>
-</div>
 
-<!-- Command palette -->
-<div id="cmdPalette" class="cmd-palette hidden">
-  <div class="cmd-inner glass-strong">
-    <input id="cmdInput" type="text" placeholder="Type a command or search notes…" />
-    <div id="cmdResults" class="cmd-results scroll-thin"></div>
+  <!-- Drag-and-drop file import overlay -->
+  <div id="dropOverlay" class="drop-overlay hidden">
+    <div class="drop-overlay-inner">
+      <div class="drop-overlay-icon"><svg viewBox="0 0 24 24" class="icon icon-lg"><use href="#i-upload"/></svg></div>
+      <p>Drop to import into TinyNote</p>
+      <span>.txt · .md · .json supported</span>
+    </div>
   </div>
+
 </div>
 
-<!-- Toasts -->
-<div id="toasts" class="toasts"></div>
+<!-- SVG icon sprite (lucide-style outline icons) -->
+<svg style="display:none">
+<defs>
+<g id="i-feather"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></g>
+<g id="i-plus"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></g>
+<g id="i-search"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></g>
+<g id="i-x"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></g>
+<g id="i-sort"><path d="M3 16h6M3 12h10M3 8h14"/><path d="M17 4v16m0 0-3-3m3 3 3-3"/></g>
+<g id="i-sun"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></g>
+<g id="i-moon"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></g>
+<g id="i-contrast"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 0 0 20z"/></g>
+<g id="i-book"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></g>
+<g id="i-command"><path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/></g>
+<g id="i-arrow-left"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></g>
+<g id="i-undo"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-15-6.7L3 13"/></g>
+<g id="i-redo"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 15-6.7L21 13"/></g>
+<g id="i-bold"><path d="M6 4h8a4 4 0 0 1 0 8H6zM6 12h9a4 4 0 0 1 0 8H6z"/></g>
+<g id="i-italic"><line x1="19" y1="4" x2="10" y2="4"/><line x1="14" y1="20" x2="5" y2="20"/><line x1="15" y1="4" x2="9" y2="20"/></g>
+<g id="i-underline"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><line x1="4" y1="21" x2="20" y2="21"/></g>
+<g id="i-h1"><path d="M4 4v16M12 4v16M4 12h8"/><path d="m17 10 3-2v8"/></g>
+<g id="i-h2"><path d="M4 4v16M12 4v16M4 12h8"/><path d="M21 18h-4c0-4 4-3 4-6 0-1.2-1-2-2-2s-2 .8-2 2"/></g>
+<g id="i-h3"><path d="M4 4v16M12 4v16M4 12h8"/><path d="M17 8.5c1-.7 2-.6 2.5.2.6.9.2 2-1 2.3 1.3.2 1.9 1.3 1.2 2.4-.6.9-1.9 1-2.7.3"/></g>
+<g id="i-list"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></g>
+<g id="i-list-ordered"><line x1="10" y1="6" x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="10" y1="18" x2="20" y2="18"/><path d="M4 6h1v4M4 10h2M4.5 14h1.2a1 1 0 0 1 0 2H4M4 20h2.5a1 1 0 0 0 0-2H4v2"/></g>
+<g id="i-quote"><path d="M7 7a4 4 0 0 0-4 4v3h4v-3H5a2 2 0 0 1 2-2z"/><path d="M17 7a4 4 0 0 0-4 4v3h4v-3h-2a2 2 0 0 1 2-2z"/></g>
+<g id="i-code"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></g>
+<g id="i-minus"><line x1="5" y1="12" x2="19" y2="12"/></g>
+<g id="i-palette"><circle cx="13.5" cy="6.5" r="1"/><circle cx="17.5" cy="10.5" r="1"/><circle cx="8.5" cy="7.5" r="1"/><circle cx="6.5" cy="12.5" r="1"/><path d="M12 2a10 10 0 1 0 8.5 15.4c.5-.8-.1-1.9-1-1.9h-1.6a2 2 0 0 1-2-2 2 2 0 0 1 .6-1.4 2 2 0 0 0-1.4-3.4H14a2 2 0 0 1-2-2c0-1.1.4-1.7 1-2.1A2 2 0 0 0 12 2z"/></g>
+<g id="i-pin"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-1.4-1.4A2 2 0 0 1 17 14.2V7a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v7.2a2 2 0 0 1-.6 1.4L5 17z"/></g>
+<g id="i-star"><polygon points="12 2 15 9 22 9.5 17 14.5 18.5 22 12 18 5.5 22 7 14.5 2 9.5 9 9"/></g>
+<g id="i-eye"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></g>
+<g id="i-history"><path d="M3 12a9 9 0 1 0 2.6-6.3"/><polyline points="3 4 3 12 8 12"/><polyline points="12 8 12 12 15 14"/></g>
+<g id="i-more"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></g>
+<g id="i-download"><path d="M12 3v12"/><polyline points="7 11 12 16 17 11"/><path d="M5 20h14"/></g>
+<g id="i-upload"><path d="M12 21V9"/><polyline points="7 13 12 8 17 13"/><path d="M5 20h14"/></g>
+<g id="i-maximize"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M3 16v3a2 2 0 0 0 2 2h3"/></g>
+<g id="i-copy"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></g>
+<g id="i-trash"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></g>
+</defs>
+</svg>
 
-<!-- Hidden file input -->
-<input type="file" id="fileInput" accept=".txt,.md,.markdown,.html,.json" hidden />
-
-<script src="app.js"></script>
+<script src="script.js"></script>
 </body>
 </html>
