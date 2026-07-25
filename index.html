@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
 <title>TinyNote</title>
 <meta name="description" content="TinyNote — a private, fast notepad. Nothing leaves your device." />
-<link rel="manifest" href="manifest.json" />
 <link rel="icon" href="data:,">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -80,98 +79,43 @@
 
     <div id="editorView" class="editor-view hidden">
       <!-- Toolbar -->
-      <div class="toolbar glass-strong" id="mainToolbar">
+      <div class="toolbar glass-strong scroll-x-thin">
         <button class="tool-btn mobile-back-btn" id="btnMobileBack" title="Back to notes" aria-label="Back to notes"><svg viewBox="0 0 24 24" class="icon"><use href="#i-arrow-left"/></svg></button>
         <input id="titleInput" class="title-input" placeholder="Untitled" aria-label="Note title" />
 
-        <!-- Undo/Redo -->
         <div class="tool-group">
           <button class="tool-btn" id="btnUndo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-undo"/></svg></button>
           <button class="tool-btn" id="btnRedo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-redo"/></svg></button>
         </div>
-
-        <!-- Font family -->
-        <div class="tool-group">
-          <div class="font-select-wrap">
-            <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-type"/></svg>
-            <select id="fontFamilySelect" class="font-family-select" aria-label="Font family" title="Font family">
-              <option value="Inter, sans-serif">Arial</option>
-              <option value="'Fraunces', serif">Fraunces</option>
-              <option value="Georgia, serif">Georgia</option>
-              <option value="'Courier New', monospace">Courier New</option>
-              <option value="'Times New Roman', serif">Times New Roman</option>
-              <option value="Verdana, sans-serif">Verdana</option>
-              <option value="Trebuchet MS, sans-serif">Trebuchet</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Text style -->
-        <div class="tool-group">
-          <div class="style-select-wrap">
-            <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-list"/></svg>
-            <select id="blockStyleSelect" class="block-style-select" aria-label="Text style" title="Text style">
-              <option value="P">Normal</option>
-              <option value="H1">Heading 1</option>
-              <option value="H2">Heading 2</option>
-              <option value="H3">Heading 3</option>
-              <option value="BLOCKQUOTE">Quote</option>
-              <option value="PRE">Code Block</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Font size +/- -->
-        <div class="tool-group">
-          <div class="font-size-ctrl">
-            <button class="font-size-btn" id="btnFontSizeDec" title="Decrease font size" aria-label="Decrease font size">−</button>
-            <input id="fontSizeDisplay" class="font-size-input" type="number" min="8" max="96" value="16" title="Font size" aria-label="Font size" />
-            <button class="font-size-btn" id="btnFontSizeInc" title="Increase font size" aria-label="Increase font size">+</button>
-          </div>
-        </div>
-
-        <!-- Bold / Italic / Underline / Strike -->
         <div class="tool-group">
           <button class="tool-btn" data-cmd="bold" title="Bold (⌘B)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-bold"/></svg></button>
           <button class="tool-btn" data-cmd="italic" title="Italic (⌘I)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-italic"/></svg></button>
-          <button class="tool-btn" data-cmd="underline" title="Underline (⌘U)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-underline"/></svg></button>
+          <button class="tool-btn" data-cmd="underline" title="Underline"><svg viewBox="0 0 24 24" class="icon"><use href="#i-underline"/></svg></button>
           <button class="tool-btn" data-cmd="strikeThrough" title="Strikethrough"><svg viewBox="0 0 24 24" class="icon"><use href="#i-strike"/></svg></button>
         </div>
-
-        <!-- Inline code / link -->
-        <div class="tool-group">
-          <button class="tool-btn" id="btnInlineCode" title="Inline code"><svg viewBox="0 0 24 24" class="icon"><use href="#i-code"/></svg></button>
-          <button class="tool-btn" id="btnInsertLinkDirect" title="Insert link (⌘L)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-link"/></svg></button>
-        </div>
-
-        <!-- Text color / Highlight -->
         <div class="tool-group">
           <div class="popover-wrap" id="textColorWrap">
-            <button class="tool-btn color-btn" id="btnTextColor" title="Text color">
-              <span class="color-btn-inner">
-                <svg viewBox="0 0 24 24" class="icon"><use href="#i-type"/></svg>
-                <span class="color-underline" id="textColorUnderline" style="background:#000000"></span>
-              </span>
-            </button>
+            <button class="tool-btn" id="btnTextColor" title="Text color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-type"/></svg></button>
           </div>
-          <div class="popover-wrap" id="highlightColorWrap">
-            <button class="tool-btn color-btn" id="btnHighlightColor" title="Highlight color">
-              <span class="color-btn-inner">
-                <svg viewBox="0 0 24 24" class="icon"><use href="#i-highlight"/></svg>
-                <span class="color-underline" id="highlightColorUnderline" style="background:#FFFF00"></span>
-              </span>
-            </button>
+          <div class="popover-wrap" id="fontSizeWrap">
+            <button class="tool-btn" id="btnFontSize" title="Font size"><svg viewBox="0 0 24 24" class="icon"><use href="#i-size"/></svg></button>
+          </div>
+          <div class="popover-wrap" id="insertWrap">
+            <button class="tool-btn" id="btnInsert" title="Insert"><svg viewBox="0 0 24 24" class="icon"><use href="#i-insert"/></svg></button>
           </div>
         </div>
-
-        <!-- Lists / Quote / Code block -->
+        <div class="tool-group">
+          <button class="tool-btn" data-block="H1" title="Heading 1"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h1"/></svg></button>
+          <button class="tool-btn" data-block="H2" title="Heading 2"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h2"/></svg></button>
+          <button class="tool-btn" data-block="H3" title="Heading 3"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h3"/></svg></button>
+        </div>
         <div class="tool-group">
           <button class="tool-btn" data-cmd="insertUnorderedList" title="Bulleted list"><svg viewBox="0 0 24 24" class="icon"><use href="#i-list"/></svg></button>
           <button class="tool-btn" data-cmd="insertOrderedList" title="Numbered list"><svg viewBox="0 0 24 24" class="icon"><use href="#i-list-ordered"/></svg></button>
-          <button class="tool-btn" data-cmd="insertHorizontalRule" title="Divider"><svg viewBox="0 0 24 24" class="icon"><use href="#i-minus"/></svg></button>
+          <button class="tool-btn" data-block="BLOCKQUOTE" title="Quote"><svg viewBox="0 0 24 24" class="icon"><use href="#i-quote"/></svg></button>
+          <button class="tool-btn" data-block="PRE" title="Code block"><svg viewBox="0 0 24 24" class="icon"><use href="#i-code"/></svg></button>
+          <button class="tool-btn" id="btnHr" title="Divider"><svg viewBox="0 0 24 24" class="icon"><use href="#i-minus"/></svg></button>
         </div>
-
-        <!-- Note options -->
         <div class="tool-group">
           <div class="popover-wrap" id="colorPopoverWrap">
             <button class="tool-btn" id="btnColor" title="Label color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-palette"/></svg></button>
@@ -181,15 +125,7 @@
           <button class="tool-btn" id="btnPreview" title="View mode (read-only)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-eye"/></svg></button>
           <button class="tool-btn" id="btnHistory" title="Version history"><svg viewBox="0 0 24 24" class="icon"><use href="#i-history"/></svg></button>
         </div>
-
-        <!-- Insert / More -->
         <div class="tool-group tool-group-last">
-          <div class="popover-wrap" id="insertWrap">
-            <button class="tool-btn tool-btn-label" id="btnInsert" title="Insert">
-              <svg viewBox="0 0 24 24" class="icon"><use href="#i-insert"/></svg>
-              <span>Insert</span>
-            </button>
-          </div>
           <div class="popover-wrap" id="moreMenuWrap">
             <button class="tool-btn" id="btnMore" title="More"><svg viewBox="0 0 24 24" class="icon"><use href="#i-more"/></svg></button>
           </div>
@@ -197,7 +133,9 @@
         </div>
       </div>
 
-      <!-- Floating menus (JS portals these to <body>) -->
+      <!-- Floating popovers/menus: JS moves these to <body> on init so they
+           can never be clipped by the toolbar's horizontal scroll, and they
+           become bottom sheets on mobile. -->
       <div class="floating-menu popover glass-strong" id="colorPopover">
         <button class="swatch swatch-clear" data-color="" title="Clear">✕</button>
         <button class="swatch" data-color="oklch(0.82 0.15 75)" style="background:oklch(0.82 0.15 75)" aria-label="amber"></button>
@@ -206,79 +144,24 @@
         <button class="swatch" data-color="oklch(0.75 0.13 230)" style="background:oklch(0.75 0.13 230)" aria-label="sky"></button>
         <button class="swatch" data-color="oklch(0.7 0.17 300)" style="background:oklch(0.7 0.17 300)" aria-label="violet"></button>
       </div>
-
-      <!-- Premium text color picker -->
-      <div class="floating-menu color-picker-panel glass-strong" id="textColorPopover">
-        <div class="cp-hex-row">
-          <label class="cp-hex-label">Hex</label>
-          <input class="cp-hex-input" id="tcHexInput" type="text" value="#000000" maxlength="7" spellcheck="false" />
-        </div>
-        <div class="cp-swatches">
-          <button class="cp-swatch" data-hex="#e11d48" style="background:#e11d48" title="Red"></button>
-          <button class="cp-swatch" data-hex="#ea580c" style="background:#ea580c" title="Orange"></button>
-          <button class="cp-swatch" data-hex="#ca8a04" style="background:#ca8a04" title="Yellow"></button>
-          <button class="cp-swatch" data-hex="#92400e" style="background:#92400e" title="Brown"></button>
-          <button class="cp-swatch" data-hex="#16a34a" style="background:#16a34a" title="Green"></button>
-          <button class="cp-swatch" data-hex="#4d7c0f" style="background:#4d7c0f" title="Olive"></button>
-          <button class="cp-swatch" data-hex="#9333ea" style="background:#9333ea" title="Purple"></button>
-          <button class="cp-swatch" data-hex="#7c3aed" style="background:#7c3aed" title="Violet"></button>
-          <button class="cp-swatch" data-hex="#2563eb" style="background:#2563eb" title="Blue"></button>
-          <button class="cp-swatch" data-hex="#0891b2" style="background:#0891b2" title="Teal"></button>
-          <button class="cp-swatch" data-hex="#65a30d" style="background:#65a30d" title="Lime"></button>
-          <button class="cp-swatch" data-hex="#000000" style="background:#000000" title="Black"></button>
-          <button class="cp-swatch" data-hex="#4b5563" style="background:#4b5563" title="Gray"></button>
-          <button class="cp-swatch" data-hex="#9ca3af" style="background:#9ca3af" title="Light gray"></button>
-          <button class="cp-swatch" data-hex="#ffffff" style="background:#ffffff;border:1px solid #ddd" title="White"></button>
-          <button class="cp-swatch cp-swatch-inherit" data-hex="inherit" title="Default">A</button>
-        </div>
-        <canvas class="cp-gradient" id="tcGradient" width="220" height="130"></canvas>
-        <div class="cp-hue-row">
-          <canvas class="cp-hue" id="tcHue" width="220" height="16"></canvas>
-        </div>
-        <div class="cp-preview-row">
-          <div class="cp-preview" id="tcPreview" style="background:#000000"></div>
-        </div>
-        <div class="cp-actions">
-          <button class="cp-apply" id="tcApplyBtn">Apply</button>
-        </div>
+      <div class="floating-menu popover glass-strong" id="textColorPopover">
+        <button class="swatch swatch-clear" data-tcolor="inherit" title="Default">✕</button>
+        <button class="swatch" data-tcolor="#e11d48" style="background:#e11d48" aria-label="red"></button>
+        <button class="swatch" data-tcolor="#d97706" style="background:#d97706" aria-label="amber"></button>
+        <button class="swatch" data-tcolor="#16a34a" style="background:#16a34a" aria-label="green"></button>
+        <button class="swatch" data-tcolor="#2563eb" style="background:#2563eb" aria-label="blue"></button>
+        <button class="swatch" data-tcolor="#7c3aed" style="background:#7c3aed" aria-label="violet"></button>
       </div>
-
-      <!-- Highlight color picker -->
-      <div class="floating-menu color-picker-panel glass-strong" id="highlightColorPopover">
-        <div class="cp-hex-row">
-          <label class="cp-hex-label">Hex</label>
-          <input class="cp-hex-input" id="hlHexInput" type="text" value="#FFFF00" maxlength="7" spellcheck="false" />
-        </div>
-        <div class="cp-swatches">
-          <button class="cp-swatch" data-hex="#fef08a" style="background:#fef08a" title="Yellow"></button>
-          <button class="cp-swatch" data-hex="#86efac" style="background:#86efac" title="Green"></button>
-          <button class="cp-swatch" data-hex="#93c5fd" style="background:#93c5fd" title="Blue"></button>
-          <button class="cp-swatch" data-hex="#f9a8d4" style="background:#f9a8d4" title="Pink"></button>
-          <button class="cp-swatch" data-hex="#fca5a5" style="background:#fca5a5" title="Red"></button>
-          <button class="cp-swatch" data-hex="#fdba74" style="background:#fdba74" title="Orange"></button>
-          <button class="cp-swatch" data-hex="#c4b5fd" style="background:#c4b5fd" title="Purple"></button>
-          <button class="cp-swatch" data-hex="#99f6e4" style="background:#99f6e4" title="Teal"></button>
-          <button class="cp-swatch" data-hex="transparent" style="background:white;border:1px solid #ddd" title="Clear highlight">✕</button>
-        </div>
-        <canvas class="cp-gradient" id="hlGradient" width="220" height="130"></canvas>
-        <div class="cp-hue-row">
-          <canvas class="cp-hue" id="hlHue" width="220" height="16"></canvas>
-        </div>
-        <div class="cp-preview-row">
-          <div class="cp-preview" id="hlPreview" style="background:#FFFF00"></div>
-        </div>
-        <div class="cp-actions">
-          <button class="cp-apply" id="hlApplyBtn">Apply</button>
-        </div>
+      <div class="floating-menu menu glass-strong" id="fontSizeMenu">
+        <button class="menu-item" data-fsize="12px">Small</button>
+        <button class="menu-item" data-fsize="15px">Normal</button>
+        <button class="menu-item" data-fsize="20px">Large</button>
+        <button class="menu-item" data-fsize="28px">Huge</button>
       </div>
-
       <div class="floating-menu menu glass-strong" id="insertMenu">
         <button class="menu-item" id="mInsertLink"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-link"/></svg>Insert link</button>
-        <button class="menu-item" id="mInsertImage"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-image"/></svg>Insert image URL</button>
-        <button class="menu-item" id="mInsertImageFile"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-image"/></svg>Insert image from file</button>
+        <button class="menu-item" id="mInsertImage"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-image"/></svg>Insert image</button>
         <button class="menu-item" id="mInsertChecklist"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-checklist"/></svg>Insert checklist</button>
-        <button class="menu-item" id="mInsertTable"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-table"/></svg>Insert table</button>
-        <button class="menu-item" id="mInsertDate"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-calendar"/></svg>Insert date</button>
       </div>
       <div class="floating-menu menu glass-strong" id="moreMenu">
         <button class="menu-item" id="mExportTxt"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .txt</button>
@@ -295,31 +178,23 @@
       <!-- Editor / Preview -->
       <div class="editor-scroll scroll-thin">
         <div class="editor-inner">
-          <div id="editor" class="editor-content" contenteditable="true" spellcheck="true" role="textbox" aria-label="Note content" aria-multiline="true" data-empty="Start writing…"></div>
+          <div id="editor" class="editor-content" contenteditable="true" spellcheck="true" role="textbox" aria-label="Note content" data-empty="Start writing…"></div>
         </div>
       </div>
 
-      <!-- Image file input (hidden) -->
-      <input type="file" id="insertImageFileInput" accept="image/*" class="hidden" />
+      <!-- Floating quick actions -->
+      <div class="editor-fab-group" id="editorFabGroup">
+        <button class="editor-fab" id="btnCopyAll" title="Copy all text" aria-label="Copy all text"><svg viewBox="0 0 24 24" class="icon"><use href="#i-copy"/></svg></button>
+        <button class="editor-fab danger" id="btnDeleteAll" title="Delete all text" aria-label="Delete all text"><svg viewBox="0 0 24 24" class="icon"><use href="#i-trash"/></svg></button>
+      </div>
 
-      <!-- Status bar with integrated copy/download/delete -->
+      <!-- Status bar -->
       <div class="status-bar glass">
         <span id="statWords">0 words</span>
         <span id="statChars">0 chars</span>
         <span id="statRead">~1 min read</span>
         <span class="ml-auto" id="statSaved"></span>
         <span id="statEdited">Edited just now</span>
-        <div class="status-actions">
-          <button class="status-action-btn" id="btnCopyAll" title="Copy all text (with formatting)" aria-label="Copy all text">
-            <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-copy"/></svg>
-          </button>
-          <button class="status-action-btn" id="btnDownloadNote" title="Download note" aria-label="Download note">
-            <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>
-          </button>
-          <button class="status-action-btn danger" id="btnDeleteAll" title="Clear note content" aria-label="Clear note content">
-            <svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-trash"/></svg>
-          </button>
-        </div>
       </div>
     </div>
 
@@ -367,7 +242,7 @@
 
 </div>
 
-<!-- SVG icon sprite -->
+<!-- SVG icon sprite (lucide-style outline icons) -->
 <svg style="display:none">
 <defs>
 <g id="i-feather"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></g>
@@ -412,9 +287,6 @@
 <g id="i-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></g>
 <g id="i-image"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></g>
 <g id="i-checklist"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></g>
-<g id="i-highlight"><path d="M9 11l-6 6v3h3l6-6"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></g>
-<g id="i-table"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/></g>
-<g id="i-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></g>
 </defs>
 </svg></div>
 <script src="script.js"></script>
