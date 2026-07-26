@@ -6,6 +6,7 @@
 <title>TinyNote</title>
 <meta name="description" content="TinyNote — a private, fast notepad. Nothing leaves your device." />
 <link rel="icon" href="data:,">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -93,27 +94,33 @@
           <button class="tool-btn" data-cmd="underline" title="Underline"><svg viewBox="0 0 24 24" class="icon"><use href="#i-underline"/></svg></button>
           <button class="tool-btn" data-cmd="strikeThrough" title="Strikethrough"><svg viewBox="0 0 24 24" class="icon"><use href="#i-strike"/></svg></button>
         </div>
+        <div class="tool-group style-select-wrap" id="styleSelectWrap" title="Text style">
+          <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-h1"/></svg>
+          <select id="styleSelect" class="style-select" aria-label="Text style">
+            <option value="P">Normal</option>
+            <option value="H1">Heading 1</option>
+            <option value="H2">Heading 2</option>
+            <option value="H3">Heading 3</option>
+            <option value="BLOCKQUOTE">Quote</option>
+            <option value="PRE">Code block</option>
+          </select>
+        </div>
+        <div class="tool-group font-size-group" id="fontSizeGroup" title="Font size">
+          <button class="tool-btn tool-btn-sm" id="btnFontDec" aria-label="Decrease font size">−</button>
+          <input id="fontSizeInput" class="font-size-input" type="text" inputmode="numeric" value="16" aria-label="Font size" />
+          <button class="tool-btn tool-btn-sm" id="btnFontInc" aria-label="Increase font size">+</button>
+        </div>
         <div class="tool-group">
           <div class="popover-wrap" id="textColorWrap">
             <button class="tool-btn" id="btnTextColor" title="Text color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-type"/></svg></button>
-          </div>
-          <div class="popover-wrap" id="fontSizeWrap">
-            <button class="tool-btn" id="btnFontSize" title="Font size"><svg viewBox="0 0 24 24" class="icon"><use href="#i-size"/></svg></button>
           </div>
           <div class="popover-wrap" id="insertWrap">
             <button class="tool-btn" id="btnInsert" title="Insert"><svg viewBox="0 0 24 24" class="icon"><use href="#i-insert"/></svg></button>
           </div>
         </div>
         <div class="tool-group">
-          <button class="tool-btn" data-block="H1" title="Heading 1"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h1"/></svg></button>
-          <button class="tool-btn" data-block="H2" title="Heading 2"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h2"/></svg></button>
-          <button class="tool-btn" data-block="H3" title="Heading 3"><svg viewBox="0 0 24 24" class="icon"><use href="#i-h3"/></svg></button>
-        </div>
-        <div class="tool-group">
           <button class="tool-btn" data-cmd="insertUnorderedList" title="Bulleted list"><svg viewBox="0 0 24 24" class="icon"><use href="#i-list"/></svg></button>
           <button class="tool-btn" data-cmd="insertOrderedList" title="Numbered list"><svg viewBox="0 0 24 24" class="icon"><use href="#i-list-ordered"/></svg></button>
-          <button class="tool-btn" data-block="BLOCKQUOTE" title="Quote"><svg viewBox="0 0 24 24" class="icon"><use href="#i-quote"/></svg></button>
-          <button class="tool-btn" data-block="PRE" title="Code block"><svg viewBox="0 0 24 24" class="icon"><use href="#i-code"/></svg></button>
           <button class="tool-btn" id="btnHr" title="Divider"><svg viewBox="0 0 24 24" class="icon"><use href="#i-minus"/></svg></button>
         </div>
         <div class="tool-group">
@@ -144,19 +151,31 @@
         <button class="swatch" data-color="oklch(0.75 0.13 230)" style="background:oklch(0.75 0.13 230)" aria-label="sky"></button>
         <button class="swatch" data-color="oklch(0.7 0.17 300)" style="background:oklch(0.7 0.17 300)" aria-label="violet"></button>
       </div>
-      <div class="floating-menu popover glass-strong" id="textColorPopover">
-        <button class="swatch swatch-clear" data-tcolor="inherit" title="Default">✕</button>
-        <button class="swatch" data-tcolor="#e11d48" style="background:#e11d48" aria-label="red"></button>
-        <button class="swatch" data-tcolor="#d97706" style="background:#d97706" aria-label="amber"></button>
-        <button class="swatch" data-tcolor="#16a34a" style="background:#16a34a" aria-label="green"></button>
-        <button class="swatch" data-tcolor="#2563eb" style="background:#2563eb" aria-label="blue"></button>
-        <button class="swatch" data-tcolor="#7c3aed" style="background:#7c3aed" aria-label="violet"></button>
-      </div>
-      <div class="floating-menu menu glass-strong" id="fontSizeMenu">
-        <button class="menu-item" data-fsize="12px">Small</button>
-        <button class="menu-item" data-fsize="15px">Normal</button>
-        <button class="menu-item" data-fsize="20px">Large</button>
-        <button class="menu-item" data-fsize="28px">Huge</button>
+      <div class="floating-menu popover glass-strong color-picker-popover" id="textColorPopover">
+        <div class="cp-hex-row">
+          <span class="cp-hex-label">Hex</span>
+          <input type="text" id="cpHexInput" class="cp-hex-input" value="#000000" maxlength="7" spellcheck="false" autocomplete="off" />
+        </div>
+        <div class="cp-swatch-grid" id="cpSwatchGrid">
+          <button class="swatch" data-tcolor="#dc2626" style="background:#dc2626" aria-label="red"></button>
+          <button class="swatch" data-tcolor="#f97316" style="background:#f97316" aria-label="orange"></button>
+          <button class="swatch" data-tcolor="#eab308" style="background:#eab308" aria-label="yellow"></button>
+          <button class="swatch" data-tcolor="#92400e" style="background:#92400e" aria-label="brown"></button>
+          <button class="swatch" data-tcolor="#22c55e" style="background:#22c55e" aria-label="green"></button>
+          <button class="swatch" data-tcolor="#166534" style="background:#166534" aria-label="dark green"></button>
+          <button class="swatch" data-tcolor="#a855f7" style="background:#a855f7" aria-label="magenta"></button>
+          <button class="swatch" data-tcolor="#7c3aed" style="background:#7c3aed" aria-label="purple"></button>
+          <button class="swatch" data-tcolor="#3b82f6" style="background:#3b82f6" aria-label="blue"></button>
+          <button class="swatch" data-tcolor="#14b8a6" style="background:#14b8a6" aria-label="teal"></button>
+          <button class="swatch" data-tcolor="#86efac" style="background:#86efac" aria-label="light green"></button>
+          <button class="swatch" data-tcolor="#171717" style="background:#171717" aria-label="black"></button>
+          <button class="swatch" data-tcolor="#404040" style="background:#404040" aria-label="dark gray"></button>
+          <button class="swatch" data-tcolor="#9ca3af" style="background:#9ca3af" aria-label="gray"></button>
+        </div>
+        <button class="swatch swatch-clear cp-default-swatch" data-tcolor="inherit" title="Default color" aria-label="Default color"></button>
+        <div class="cp-sv-box" id="cpSvBox"><div class="cp-sv-cursor" id="cpSvCursor"></div></div>
+        <input type="range" id="cpHueSlider" class="cp-hue-slider" min="0" max="360" value="0" step="1" aria-label="Hue" />
+        <div class="cp-preview" id="cpPreview"></div>
       </div>
       <div class="floating-menu menu glass-strong" id="insertMenu">
         <button class="menu-item" id="mInsertLink"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-link"/></svg>Insert link</button>

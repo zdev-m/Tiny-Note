@@ -1,0 +1,11 @@
+{
+  "name": "TinyNote",
+  "short_name": "TinyNote",
+  "description": "TinyNote — a private, fast notepad. Nothing leaves your device.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#e0a45a",
+  "icons": []
+}

@@ -3,6 +3,12 @@
   const SETTINGS_KEY = "tinynote.settings.v1";
   const HISTORY_KEY = "tinynote.history.v1";
   const uid = () => "n_" + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch(() => {
+      });
+    });
+  }
   function loadNotes() {
     try {
       const raw = localStorage.getItem(NOTES_KEY);
@@ -13,7 +19,42 @@
     }
   }
   function saveNotes(list) {
-    localStorage.setItem(NOTES_KEY, JSON.stringify(list));
+    try {
+      localStorage.setItem(NOTES_KEY, JSON.stringify(list));
+    } catch (e) {
+      alert("Could not save your notes \u2014 your device storage may be full. Please export a backup and free up space.");
+    }
+  }
+  const SANITIZE_DISALLOWED_TAGS = /* @__PURE__ */ new Set(["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "LINK", "META", "FORM", "BASE", "SVG", "MATH"]);
+  function sanitizeHtml(html) {
+    const template = document.createElement("template");
+    template.innerHTML = String(html || "");
+    const walk = (node) => {
+      Array.from(node.childNodes).forEach((child) => {
+        if (child.nodeType === 1) {
+          if (SANITIZE_DISALLOWED_TAGS.has(child.tagName)) {
+            child.remove();
+            return;
+          }
+          Array.from(child.attributes).forEach((attr) => {
+            const name = attr.name.toLowerCase();
+            const value = attr.value.trim();
+            if (name.startsWith("on")) {
+              child.removeAttribute(attr.name);
+            } else if ((name === "href" || name === "src" || name === "action") && /^\s*javascript:/i.test(value)) {
+              child.removeAttribute(attr.name);
+            } else if (name === "style" && /expression\s*\(|javascript:/i.test(value)) {
+              child.removeAttribute(attr.name);
+            }
+          });
+          walk(child);
+        } else if (child.nodeType === 8) {
+          child.remove();
+        }
+      });
+    };
+    walk(template.content);
+    return template.innerHTML;
   }
   function loadSettings() {
     const defaults = { theme: "light", sortBy: "updated", sidebarWidth: 300, activeId: null, recentSearches: [] };
@@ -56,9 +97,13 @@
     const el = document.createElement("div");
     el.innerHTML = html;
     el.querySelectorAll("*").forEach((node) => {
-      if (BLOCK_TAGS.has(node.tagName)) node.insertAdjacentText("afterend", " ");
+      if (BLOCK_TAGS.has(node.tagName)) node.insertAdjacentText("afterend", "\n");
     });
-    return (el.textContent || "").replace(/[ \t]+/g, " ").replace(/ *\n */g, "\n").trim();
+    return (el.textContent || "")
+      .replace(/[ \t]+/g, " ")
+      .replace(/[ \t]*\n[ \t]*/g, "\n")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
   }
   function autoTitle(content) {
     const text = stripHtml(content).trim();
@@ -241,6 +286,18 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
   const emptyState = $("emptyState");
   const titleInput = $("titleInput");
   const editor = $("editor");
+  const styleSelect = $("styleSelect");
+  const fontSizeInput = $("fontSizeInput");
+  const cpHexInput = $("cpHexInput");
+  const cpSwatchGrid = $("cpSwatchGrid");
+  const cpSvBox = $("cpSvBox");
+  const cpSvCursor = $("cpSvCursor");
+  const cpHueSlider = $("cpHueSlider");
+  const cpPreview = $("cpPreview");
+  let currentFontSize = 16;
+  let cpHue = 0;
+  let cpSat = 0;
+  let cpVal = 0;
   const statWords = $("statWords");
   const statChars = $("statChars");
   const statRead = $("statRead");
@@ -462,9 +519,11 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
     editor.setAttribute("data-empty", ((_a = editor.textContent) == null ? void 0 : _a.trim()) ? "" : "Start writing\u2026");
     editor.setAttribute("contenteditable", viewOnly ? "false" : "true");
     titleInput.readOnly = viewOnly;
-    document.querySelectorAll("#btnUndo, #btnRedo, #btnHr, #btnColor, #btnTextColor, #btnFontSize, #btnInsert, [data-cmd], [data-block]").forEach((b) => {
+    document.querySelectorAll("#btnUndo, #btnRedo, #btnHr, #btnColor, #btnTextColor, #btnFontDec, #btnFontInc, #btnInsert, [data-cmd], [data-block]").forEach((b) => {
       b.disabled = viewOnly;
     });
+    styleSelect.disabled = viewOnly;
+    fontSizeInput.disabled = viewOnly;
     $("btnDeleteAll").toggleAttribute("disabled", viewOnly);
     $("btnPin").classList.toggle("active", !!active.pinned);
     $("btnFav").classList.toggle("fav-active", !!active.favorite);
@@ -545,7 +604,15 @@ ${htmlToMarkdown(n.content)}`);
       if (file.name.endsWith(".json")) {
         const data = JSON.parse(text);
         const incoming = Array.isArray(data) ? data : data.notes || [data];
-        const clean = incoming.filter((x) => !!x && typeof x === "object").map((x) => makeNote({ ...x, id: makeNote().id }));
+        const clean = incoming.filter((x) => !!x && typeof x === "object").map((x) => makeNote({
+          title: typeof x.title === "string" ? x.title.slice(0, 300) : "Untitled",
+          content: sanitizeHtml(typeof x.content === "string" ? x.content : ""),
+          pinned: x.pinned === true,
+          favorite: x.favorite === true,
+          color: typeof x.color === "string" ? x.color.slice(0, 60) : null,
+          createdAt: typeof x.createdAt === "number" ? x.createdAt : Date.now(),
+          updatedAt: typeof x.updatedAt === "number" ? x.updatedAt : Date.now()
+        }));
         notes = [...clean, ...notes];
         persistNotes();
         renderAll();
@@ -633,6 +700,68 @@ ${htmlToMarkdown(n.content)}`);
     sel.addRange(newRange);
     onEditorInput();
   }
+  function hsvToHex(h, s, v) {
+    const c = v * s;
+    const x = c * (1 - Math.abs(h / 60 % 2 - 1));
+    const m = v - c;
+    let r = 0, g = 0, b = 0;
+    if (h < 60) [r, g, b] = [c, x, 0];
+    else if (h < 120) [r, g, b] = [x, c, 0];
+    else if (h < 180) [r, g, b] = [0, c, x];
+    else if (h < 240) [r, g, b] = [0, x, c];
+    else if (h < 300) [r, g, b] = [x, 0, c];
+    else [r, g, b] = [c, 0, x];
+    const toHex = (n) => Math.round((n + m) * 255).toString(16).padStart(2, "0");
+    return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+  }
+  function hexToHsv(hex) {
+    const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex || "");
+    if (!m) return null;
+    const r = parseInt(m[1], 16) / 255, g = parseInt(m[2], 16) / 255, b = parseInt(m[3], 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+    let h = 0;
+    if (d !== 0) {
+      if (max === r) h = (g - b) / d % 6;
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h *= 60;
+      if (h < 0) h += 360;
+    }
+    const s = max === 0 ? 0 : d / max;
+    return { h, s, v: max };
+  }
+  function updateColorPickerUI() {
+    const hex = hsvToHex(cpHue, cpSat, cpVal);
+    cpHexInput.value = hex;
+    cpPreview.style.background = hex;
+    cpSvBox.style.backgroundColor = `hsl(${cpHue},100%,50%)`;
+    cpSvCursor.style.left = cpSat * 100 + "%";
+    cpSvCursor.style.top = (1 - cpVal) * 100 + "%";
+    cpHueSlider.value = String(Math.round(cpHue));
+  }
+  function applyCurrentPickerColor() {
+    wrapSelectionWithStyle("color", hsvToHex(cpHue, cpSat, cpVal));
+  }
+  function svBoxPointer(e) {
+    const rect = cpSvBox.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+    let x = (point.clientX - rect.left) / rect.width;
+    let y = (point.clientY - rect.top) / rect.height;
+    x = Math.max(0, Math.min(1, x));
+    y = Math.max(0, Math.min(1, y));
+    cpSat = x;
+    cpVal = 1 - y;
+    updateColorPickerUI();
+  }
+  function getSelectionFontSize() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    let node = sel.getRangeAt(0).startContainer;
+    if (node.nodeType === 3) node = node.parentElement;
+    if (!node || !editor.contains(node)) return null;
+    const size = window.getComputedStyle(node).fontSize;
+    return size ? Math.round(parseFloat(size)) : null;
+  }
   const TRACKED_BLOCKS = ["H1", "H2", "H3", "BLOCKQUOTE", "PRE"];
   function isSelectionInEditor() {
     const sel = window.getSelection();
@@ -686,6 +815,16 @@ ${htmlToMarkdown(n.content)}`);
     document.querySelectorAll("[data-block]").forEach((b) => {
       b.classList.toggle("active", b.dataset.block === blockTag);
     });
+    if (document.activeElement !== styleSelect) {
+      styleSelect.value = ["H1", "H2", "H3", "BLOCKQUOTE", "PRE"].includes(blockTag) ? blockTag : "P";
+    }
+    if (document.activeElement !== fontSizeInput) {
+      const size = inEditor ? getSelectionFontSize() : null;
+      if (size) {
+        currentFontSize = size;
+        fontSizeInput.value = String(size);
+      }
+    }
   }
   function toggleFullscreen() {
     var _a, _b, _c;
@@ -945,7 +1084,6 @@ ${htmlToMarkdown(n.content)}`);
     const colorPopover = registerFloatingMenu("btnColor", "colorPopover");
     const moreMenu = registerFloatingMenu("btnMore", "moreMenu");
     const textColorPopover = registerFloatingMenu("btnTextColor", "textColorPopover");
-    const fontSizeMenu = registerFloatingMenu("btnFontSize", "fontSizeMenu");
     const insertMenu = registerFloatingMenu("btnInsert", "insertMenu");
     colorPopover.querySelectorAll(".swatch").forEach((sw) => {
       sw.onclick = () => {
@@ -954,17 +1092,113 @@ ${htmlToMarkdown(n.content)}`);
         closeAllFloating();
       };
     });
-    textColorPopover.querySelectorAll(".swatch").forEach((sw) => {
+    textColorPopover.querySelectorAll("[data-tcolor]").forEach((sw) => {
       sw.onclick = () => {
-        wrapSelectionWithStyle("color", sw.dataset.tcolor || "inherit");
+        const val = sw.dataset.tcolor || "inherit";
+        wrapSelectionWithStyle("color", val);
+        if (val !== "inherit") {
+          const hsv = hexToHsv(val);
+          if (hsv) {
+            cpHue = hsv.h;
+            cpSat = hsv.s;
+            cpVal = hsv.v;
+            updateColorPickerUI();
+          }
+        }
         closeAllFloating();
       };
     });
-    fontSizeMenu.querySelectorAll("[data-fsize]").forEach((b) => {
-      b.onclick = () => {
-        wrapSelectionWithStyle("font-size", b.dataset.fsize || "15px");
-        closeAllFloating();
-      };
+    cpHexInput.addEventListener("change", () => {
+      let v = cpHexInput.value.trim();
+      if (v && !v.startsWith("#")) v = "#" + v;
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        const hsv = hexToHsv(v);
+        if (hsv) {
+          cpHue = hsv.h;
+          cpSat = hsv.s;
+          cpVal = hsv.v;
+          updateColorPickerUI();
+        }
+        wrapSelectionWithStyle("color", v);
+      } else {
+        cpHexInput.value = hsvToHex(cpHue, cpSat, cpVal);
+      }
+    });
+    cpHueSlider.addEventListener("input", () => {
+      cpHue = parseFloat(cpHueSlider.value) || 0;
+      updateColorPickerUI();
+      applyCurrentPickerColor();
+    });
+    let cpDragging = false;
+    cpSvBox.addEventListener("mousedown", (e) => {
+      cpDragging = true;
+      svBoxPointer(e);
+      applyCurrentPickerColor();
+    });
+    cpSvBox.addEventListener("touchstart", (e) => {
+      cpDragging = true;
+      svBoxPointer(e);
+      applyCurrentPickerColor();
+    }, { passive: true });
+    window.addEventListener("mousemove", (e) => {
+      if (cpDragging) svBoxPointer(e);
+    });
+    window.addEventListener("touchmove", (e) => {
+      if (cpDragging) svBoxPointer(e);
+    }, { passive: true });
+    window.addEventListener("mouseup", () => {
+      if (cpDragging) {
+        cpDragging = false;
+        applyCurrentPickerColor();
+      }
+    });
+    window.addEventListener("touchend", () => {
+      if (cpDragging) {
+        cpDragging = false;
+        applyCurrentPickerColor();
+      }
+    });
+    $("btnTextColor").addEventListener("click", () => {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount && !sel.isCollapsed) {
+        let node = sel.getRangeAt(0).startContainer;
+        if (node.nodeType === 3) node = node.parentElement;
+        if (node && editor.contains(node)) {
+          const rgb = window.getComputedStyle(node).color;
+          const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgb);
+          if (m) {
+            const hex = "#" + [1, 2, 3].map((i) => (+m[i]).toString(16).padStart(2, "0")).join("");
+            const hsv = hexToHsv(hex);
+            if (hsv) {
+              cpHue = hsv.h;
+              cpSat = hsv.s;
+              cpVal = hsv.v;
+            }
+          }
+        }
+      }
+      updateColorPickerUI();
+    });
+    updateColorPickerUI();
+    const applyFontSize = (px) => {
+      px = Math.max(8, Math.min(96, Math.round(px)));
+      currentFontSize = px;
+      fontSizeInput.value = String(px);
+      wrapSelectionWithStyle("font-size", px + "px");
+    };
+    $("btnFontDec").onclick = () => applyFontSize((getSelectionFontSize() || currentFontSize) - 1);
+    $("btnFontInc").onclick = () => applyFontSize((getSelectionFontSize() || currentFontSize) + 1);
+    fontSizeInput.addEventListener("change", () => {
+      const v = parseInt(fontSizeInput.value, 10);
+      if (!isNaN(v)) applyFontSize(v);
+      else fontSizeInput.value = String(currentFontSize);
+    });
+    fontSizeInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") fontSizeInput.blur();
+    });
+    styleSelect.addEventListener("change", () => {
+      const val = styleSelect.value;
+      exec("formatBlock", val === "P" ? "P" : val);
     });
     $("mInsertLink").onclick = () => {
       closeAllFloating();
@@ -1066,15 +1300,13 @@ ${htmlToMarkdown(n.content)}`);
       const active = getActive();
       if (!active) return;
       const text = stripHtml(active.content);
+      const html = active.content || "";
       const flash = () => {
         const btn = $("btnCopyAll");
         btn.classList.add("fab-success");
         setTimeout(() => btn.classList.remove("fab-success"), 900);
       };
-      try {
-        await navigator.clipboard.writeText(text);
-        flash();
-      } catch {
+      const legacyCopy = () => {
         const ta = document.createElement("textarea");
         ta.value = text;
         ta.style.position = "fixed";
@@ -1087,6 +1319,28 @@ ${htmlToMarkdown(n.content)}`);
         } catch {
         }
         ta.remove();
+      };
+      try {
+        if (navigator.clipboard && window.ClipboardItem) {
+          const item = new ClipboardItem({
+            "text/plain": new Blob([text], { type: "text/plain" }),
+            "text/html": new Blob([html], { type: "text/html" })
+          });
+          await navigator.clipboard.write([item]);
+        } else if (navigator.clipboard) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          legacyCopy();
+          return;
+        }
+        flash();
+      } catch {
+        try {
+          await navigator.clipboard.writeText(text);
+          flash();
+        } catch {
+          legacyCopy();
+        }
       }
     };
     $("btnDeleteAll").onclick = () => {
@@ -1164,6 +1418,25 @@ ${htmlToMarkdown(n.content)}`);
         e.preventDefault();
         const a = getActive();
         if (a) exportNote(a, "md");
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "a") {
+        const t = document.activeElement;
+        const isTextField = !!t && (t === editor || t.isContentEditable || t.tagName === "INPUT" || t.tagName === "TEXTAREA");
+        if (!isTextField) {
+          e.preventDefault();
+          const a = getActive();
+          if (a && !editorView.classList.contains("hidden")) {
+            editor.focus();
+            const range = document.createRange();
+            range.selectNodeContents(editor);
+            const sel = window.getSelection();
+            if (sel) {
+              sel.removeAllRanges();
+              sel.addRange(range);
+            }
+          }
+        }
         return;
       }
       if (e.key === "Escape") {

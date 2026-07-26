@@ -250,7 +250,7 @@ input, select, textarea { font: inherit; color: inherit; }
 .note-card:hover { border-color: var(--border); background: color-mix(in oklch, var(--secondary) 50%, transparent); transform: translateY(-1px); }
 .note-card.active { border-color: color-mix(in oklch, var(--primary) 40%, transparent); background: color-mix(in oklch, var(--primary) 8%, transparent); box-shadow: 0 2px 8px color-mix(in oklch, var(--primary) 18%, transparent); }
 .note-top { display: flex; align-items: center; gap: 6px; }
-.note-title { flex: 1; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.note-title { flex: 1; font-weight: 500; white-space: normal; overflow-wrap: anywhere; word-break: break-word; }
 .note-title mark.search-hit { background: color-mix(in oklch, var(--accent) 55%, transparent); color: inherit; border-radius: 3px; padding: 0 2px; }
 .note-preview { margin-top: 2px; font-size: 11px; color: var(--muted-foreground); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .note-meta { margin-top: 4px; display: flex; align-items: center; justify-content: space-between; font-size: 10px; color: var(--muted-foreground); }
@@ -334,6 +334,60 @@ input, select, textarea { font: inherit; color: inherit; }
 .tool-btn.active { color: var(--primary); background: color-mix(in oklch, var(--primary) 12%, transparent); }
 .tool-btn.fav-active { color: var(--accent); fill: currentColor; }
 .tool-btn:disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+/* Style dropdown ("Normal ▾") */
+.style-select-wrap { display: flex; align-items: center; gap: 4px; padding: 0 4px 0 6px; }
+.style-select {
+  border: none; background: transparent; font-size: 12px; color: var(--foreground);
+  padding: 6px 4px; border-radius: var(--radius-md); cursor: pointer; max-width: 96px;
+}
+.style-select:hover, .style-select:focus { background: var(--secondary); outline: none; }
+
+/* Font size stepper ("- 16 +") */
+.font-size-group { display: flex; align-items: center; gap: 2px; }
+.tool-btn-sm {
+  width: 24px; height: 24px; font-size: 15px; line-height: 1; display: grid; place-items: center;
+  border-radius: var(--radius-md); color: var(--muted-foreground); flex-shrink: 0;
+  transition: color .15s, background .15s;
+}
+.tool-btn-sm:hover { background: var(--secondary); color: var(--foreground); }
+.font-size-input {
+  width: 34px; text-align: center; border: 1px solid var(--border); border-radius: var(--radius-md);
+  background: var(--card); color: var(--foreground); font-size: 12px; padding: 4px 2px; margin: 0 2px;
+}
+
+/* Premium text color picker */
+.color-picker-popover { flex-direction: column; align-items: stretch; width: 224px; gap: 10px; padding: 12px; }
+.cp-hex-row { display: flex; align-items: center; gap: 8px; }
+.cp-hex-label { font-size: 12px; color: var(--muted-foreground); }
+.cp-hex-input {
+  flex: 1; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 5px 8px;
+  font-size: 12px; background: var(--card); color: var(--foreground);
+}
+.cp-swatch-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cp-swatch-grid .swatch { width: 100%; aspect-ratio: 1; border-radius: 999px; }
+.cp-default-swatch { width: 22px; height: 22px; border-radius: 5px; background: var(--card); }
+.cp-sv-box {
+  position: relative; width: 100%; height: 130px; border-radius: var(--radius-md);
+  background-image: linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, rgba(255,255,255,0));
+  cursor: crosshair; border: 1px solid var(--border); touch-action: none;
+}
+.cp-sv-cursor {
+  position: absolute; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.45); transform: translate(-50%, -50%); pointer-events: none;
+}
+.cp-hue-slider {
+  width: 100%; -webkit-appearance: none; appearance: none; height: 10px; border-radius: 999px; outline: none;
+  background: linear-gradient(to right, red, yellow, lime, cyan, blue, magenta, red);
+}
+.cp-hue-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: #fff;
+  border: 2px solid var(--border); box-shadow: 0 0 2px rgba(0,0,0,.4); cursor: pointer;
+}
+.cp-hue-slider::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%; background: #fff; border: 2px solid var(--border); cursor: pointer;
+}
+.cp-preview { height: 24px; border-radius: var(--radius-md); border: 1px solid var(--border); }
 .mobile-back-btn { display: none; }
 
 .popover-wrap { position: relative; }
