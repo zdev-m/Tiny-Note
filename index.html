@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
-<title>TinyNote</title>
-<meta name="description" content="TinyNote — a private, fast notepad. Nothing leaves your device." />
+<title>Tiny Notes</title>
+<meta name="description" content="Tiny Notes — a private, fast notepad. Nothing leaves your device." />
 <link rel="icon" href="data:,">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=Comfortaa:wght@400;600&family=Caveat:wght@500;600&family=EB+Garamond:wght@400;600&family=Amatic+SC:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -20,10 +20,24 @@
     <div class="sidebar-head">
       <div class="brand-mark shine"><svg viewBox="0 0 24 24" class="icon"><use href="#i-feather"/></svg></div>
       <div class="brand-text">
-        <div class="brand-title">TinyNote</div>
+        <div class="brand-title">Tiny Notes</div>
         <div class="brand-sub">private · fast</div>
       </div>
-      <button class="btn-icon ml-auto" id="btnNewNoteTop" title="New note (⌘N)" aria-label="New note">
+      <div class="popover-wrap ml-auto" id="templatesWrap">
+        <button class="btn-icon" id="btnTemplates" title="New from template" aria-label="New from template">
+          <svg viewBox="0 0 24 24" class="icon"><use href="#i-layout-template"/></svg>
+        </button>
+        <div class="floating-menu menu glass-strong" id="templatesMenu">
+          <button class="menu-item" data-template="blank"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-feather"/></svg>Blank note</button>
+          <button class="menu-item" data-template="meeting"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-checklist"/></svg>Meeting notes</button>
+          <button class="menu-item" data-template="todo"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-checklist"/></svg>To-do list</button>
+          <button class="menu-item" data-template="journal"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-book"/></svg>Journal entry</button>
+        </div>
+      </div>
+      <button class="btn-icon" id="btnShortcutsHelp" title="Keyboard shortcuts" aria-label="Keyboard shortcuts">
+        <svg viewBox="0 0 24 24" class="icon"><use href="#i-help"/></svg>
+      </button>
+      <button class="btn-icon" id="btnNewNoteTop" title="New note (⌘N)" aria-label="New note">
         <svg viewBox="0 0 24 24" class="icon"><use href="#i-plus"/></svg>
       </button>
     </div>
@@ -94,6 +108,30 @@
           <button class="tool-btn" data-cmd="underline" title="Underline"><svg viewBox="0 0 24 24" class="icon"><use href="#i-underline"/></svg></button>
           <button class="tool-btn" data-cmd="strikeThrough" title="Strikethrough"><svg viewBox="0 0 24 24" class="icon"><use href="#i-strike"/></svg></button>
         </div>
+        <div class="tool-group">
+          <button class="tool-btn" data-cmd="justifyLeft" title="Align left"><svg viewBox="0 0 24 24" class="icon"><use href="#i-align-left"/></svg></button>
+          <button class="tool-btn" data-cmd="justifyCenter" title="Align center"><svg viewBox="0 0 24 24" class="icon"><use href="#i-align-center"/></svg></button>
+          <button class="tool-btn" data-cmd="justifyRight" title="Align right"><svg viewBox="0 0 24 24" class="icon"><use href="#i-align-right"/></svg></button>
+          <button class="tool-btn" data-cmd="justifyFull" title="Justify"><svg viewBox="0 0 24 24" class="icon"><use href="#i-align-justify"/></svg></button>
+        </div>
+        <div class="tool-group style-select-wrap" id="fontFamilyWrap" title="Font family">
+          <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-type"/></svg>
+          <select id="fontFamilySelect" class="style-select" aria-label="Font family">
+            <option value="">Default</option>
+            <option value="Arial, sans-serif">Arial</option>
+            <option value="Georgia, serif">Georgia</option>
+            <option value="'Times New Roman', serif">Times New Roman</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="Verdana, sans-serif">Verdana</option>
+            <option value="'Trebuchet MS', sans-serif">Trebuchet MS</option>
+            <option value="Impact, sans-serif">Impact</option>
+            <option value="'Comic Sans MS', cursive">Comic Sans MS</option>
+            <option value="'Comfortaa', sans-serif">Comfortaa</option>
+            <option value="'Caveat', cursive">Caveat</option>
+            <option value="'EB Garamond', serif">EB Garamond</option>
+            <option value="'Amatic SC', cursive">Amatic SC</option>
+          </select>
+        </div>
         <div class="tool-group style-select-wrap" id="styleSelectWrap" title="Text style">
           <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-h1"/></svg>
           <select id="styleSelect" class="style-select" aria-label="Text style">
@@ -113,6 +151,9 @@
         <div class="tool-group">
           <div class="popover-wrap" id="textColorWrap">
             <button class="tool-btn" id="btnTextColor" title="Text color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-type"/></svg></button>
+          </div>
+          <div class="popover-wrap" id="highlightColorWrap">
+            <button class="tool-btn" id="btnHighlight" title="Highlight color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-palette"/></svg></button>
           </div>
           <div class="popover-wrap" id="insertWrap">
             <button class="tool-btn" id="btnInsert" title="Insert"><svg viewBox="0 0 24 24" class="icon"><use href="#i-insert"/></svg></button>
@@ -151,6 +192,32 @@
         <button class="swatch" data-color="oklch(0.75 0.13 230)" style="background:oklch(0.75 0.13 230)" aria-label="sky"></button>
         <button class="swatch" data-color="oklch(0.7 0.17 300)" style="background:oklch(0.7 0.17 300)" aria-label="violet"></button>
       </div>
+      <div class="floating-menu popover glass-strong color-picker-popover" id="highlightColorPopover">
+        <div class="cp-hex-row">
+          <span class="cp-hex-label">Hex</span>
+          <input type="text" id="hlHexInput" class="cp-hex-input" value="#fff3a0" maxlength="7" spellcheck="false" autocomplete="off" />
+        </div>
+        <div class="cp-swatch-grid" id="hlSwatchGrid">
+          <button class="swatch" data-hcolor="#fff3a0" style="background:#fff3a0" aria-label="yellow"></button>
+          <button class="swatch" data-hcolor="#bbf7d0" style="background:#bbf7d0" aria-label="green"></button>
+          <button class="swatch" data-hcolor="#a7f3d0" style="background:#a7f3d0" aria-label="teal"></button>
+          <button class="swatch" data-hcolor="#bfdbfe" style="background:#bfdbfe" aria-label="blue"></button>
+          <button class="swatch" data-hcolor="#ddd6fe" style="background:#ddd6fe" aria-label="purple"></button>
+          <button class="swatch" data-hcolor="#fbcfe8" style="background:#fbcfe8" aria-label="pink"></button>
+          <button class="swatch" data-hcolor="#fecaca" style="background:#fecaca" aria-label="red"></button>
+          <button class="swatch" data-hcolor="#fed7aa" style="background:#fed7aa" aria-label="orange"></button>
+          <button class="swatch" data-hcolor="#fde68a" style="background:#fde68a" aria-label="amber"></button>
+          <button class="swatch" data-hcolor="#e5e7eb" style="background:#e5e7eb" aria-label="gray"></button>
+          <button class="swatch" data-hcolor="#fecdd3" style="background:#fecdd3" aria-label="rose"></button>
+          <button class="swatch" data-hcolor="#d9f99d" style="background:#d9f99d" aria-label="lime"></button>
+          <button class="swatch" data-hcolor="#c7d2fe" style="background:#c7d2fe" aria-label="indigo"></button>
+          <button class="swatch" data-hcolor="#fae8ff" style="background:#fae8ff" aria-label="fuchsia"></button>
+        </div>
+        <button class="swatch swatch-clear cp-default-swatch" data-hcolor="inherit" title="No highlight" aria-label="No highlight"></button>
+        <div class="cp-sv-box" id="hlSvBox"><div class="cp-sv-cursor" id="hlSvCursor"></div></div>
+        <input type="range" id="hlHueSlider" class="cp-hue-slider" min="0" max="360" value="48" step="1" aria-label="Hue" />
+        <div class="cp-preview" id="hlPreview"></div>
+      </div>
       <div class="floating-menu popover glass-strong color-picker-popover" id="textColorPopover">
         <div class="cp-hex-row">
           <span class="cp-hex-label">Hex</span>
@@ -181,12 +248,28 @@
         <button class="menu-item" id="mInsertLink"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-link"/></svg>Insert link</button>
         <button class="menu-item" id="mInsertImage"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-image"/></svg>Insert image</button>
         <button class="menu-item" id="mInsertChecklist"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-checklist"/></svg>Insert checklist</button>
+        <button class="menu-item" id="mInsertTable"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-table"/></svg>Insert table</button>
       </div>
+      <div class="floating-menu menu glass-strong" id="slashMenu">
+        <button class="menu-item" data-slash="h1"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-h1"/></svg>Heading 1</button>
+        <button class="menu-item" data-slash="h2"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-h2"/></svg>Heading 2</button>
+        <button class="menu-item" data-slash="h3"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-h3"/></svg>Heading 3</button>
+        <button class="menu-item" data-slash="ul"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-list"/></svg>Bulleted list</button>
+        <button class="menu-item" data-slash="ol"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-list-ordered"/></svg>Numbered list</button>
+        <button class="menu-item" data-slash="checklist"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-checklist"/></svg>Checklist</button>
+        <button class="menu-item" data-slash="quote"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-quote"/></svg>Quote</button>
+        <button class="menu-item" data-slash="code"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-code"/></svg>Code block</button>
+        <button class="menu-item" data-slash="table"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-table"/></svg>Table</button>
+        <button class="menu-item" data-slash="hr"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-minus"/></svg>Divider</button>
+        <button class="menu-item" data-slash="link"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-link"/></svg>Link to note</button>
+      </div>
+      <div class="floating-menu menu glass-strong" id="noteLinkMenu"></div>
       <div class="floating-menu menu glass-strong" id="moreMenu">
         <button class="menu-item" id="mExportTxt"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .txt</button>
         <button class="menu-item" id="mExportMd"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .md</button>
         <button class="menu-item" id="mExportJson"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as .json</button>
         <button class="menu-item" id="mExportPdf"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export as PDF</button>
+        <button class="menu-item" id="mExportDoc"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-file-doc"/></svg>Export as Word (.doc)</button>
         <button class="menu-item" id="mExportAll"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-download"/></svg>Export all (backup)</button>
         <button class="menu-item" id="mImport"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-upload"/></svg>Import file…</button>
         <button class="menu-item" id="mZen"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-feather"/></svg>Toggle Zen mode</button>
@@ -197,6 +280,10 @@
       <!-- Editor / Preview -->
       <div class="editor-scroll scroll-thin">
         <div class="editor-inner">
+          <div class="tags-row" id="tagsRow">
+            <div class="tags-chips" id="tagsChips"></div>
+            <input id="tagInput" class="tag-input" placeholder="+ Add tag" aria-label="Add tag" />
+          </div>
           <div id="editor" class="editor-content" contenteditable="true" spellcheck="true" role="textbox" aria-label="Note content" data-empty="Start writing…"></div>
         </div>
       </div>
@@ -221,7 +308,7 @@
     <div id="emptyState" class="empty-state">
       <div class="empty-icon shine"><svg viewBox="0 0 24 24" class="icon icon-lg"><use href="#i-feather"/></svg></div>
       <h1 class="empty-title">A private place to think.</h1>
-      <p class="empty-sub">TinyNote is a private, fast notepad. Nothing leaves this device — write freely, anytime.</p>
+      <p class="empty-sub">Tiny Notes is a private, fast notepad. Nothing leaves this device — write freely, anytime.</p>
       <button id="btnEmptyNew" class="btn-primary">Create your first note</button>
     </div>
 
@@ -237,6 +324,29 @@
       </div>
     </div>
   </main>
+
+  <!-- Keyboard shortcuts help -->
+  <div id="shortcutsOverlay" class="overlay overlay-top hidden">
+    <div class="cmd-palette glass-strong anim-float" id="shortcutsPanelInner">
+      <div class="cmd-head">
+        <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-help"/></svg>
+        <div class="brand-title" style="font-size:15px;">Keyboard shortcuts</div>
+        <kbd class="kbd">Esc</kbd>
+      </div>
+      <div class="cmd-body scroll-thin shortcuts-list">
+        <div class="shortcut-row"><span>Command palette</span><kbd class="kbd">Ctrl K</kbd></div>
+        <div class="shortcut-row"><span>New note</span><kbd class="kbd">Ctrl N</kbd></div>
+        <div class="shortcut-row"><span>Search notes</span><kbd class="kbd">Ctrl F</kbd></div>
+        <div class="shortcut-row"><span>Duplicate note</span><kbd class="kbd">Ctrl D</kbd></div>
+        <div class="shortcut-row"><span>Export as .md</span><kbd class="kbd">Ctrl S</kbd></div>
+        <div class="shortcut-row"><span>Select note text</span><kbd class="kbd">Ctrl A</kbd></div>
+        <div class="shortcut-row"><span>Bold</span><kbd class="kbd">Ctrl B</kbd></div>
+        <div class="shortcut-row"><span>Italic</span><kbd class="kbd">Ctrl I</kbd></div>
+        <div class="shortcut-row"><span>Undo / Redo</span><kbd class="kbd">Ctrl Z / Ctrl ⇧ Z</kbd></div>
+        <div class="shortcut-row"><span>Close menus / dialogs</span><kbd class="kbd">Esc</kbd></div>
+      </div>
+    </div>
+  </div>
 
   <!-- Command palette -->
   <div id="cmdOverlay" class="overlay overlay-top hidden">
@@ -254,7 +364,7 @@
   <div id="dropOverlay" class="drop-overlay hidden">
     <div class="drop-overlay-inner">
       <div class="drop-overlay-icon"><svg viewBox="0 0 24 24" class="icon icon-lg"><use href="#i-upload"/></svg></div>
-      <p>Drop to import into TinyNote</p>
+      <p>Drop to import into Tiny Notes</p>
       <span>.txt · .md · .json supported</span>
     </div>
   </div>
@@ -306,6 +416,15 @@
 <g id="i-link"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></g>
 <g id="i-image"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/></g>
 <g id="i-checklist"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></g>
+<g id="i-align-left"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="17" y2="18"/></g>
+<g id="i-align-center"><line x1="4" y1="6" x2="20" y2="6"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="5.5" y1="18" x2="18.5" y2="18"/></g>
+<g id="i-align-right"><line x1="4" y1="6" x2="20" y2="6"/><line x1="10" y1="12" x2="20" y2="12"/><line x1="7" y1="18" x2="20" y2="18"/></g>
+<g id="i-align-justify"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></g>
+<g id="i-table"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="3" y1="16" x2="21" y2="16"/><line x1="10" y1="4" x2="10" y2="20"/></g>
+<g id="i-tag"><path d="M20.59 13.41 11 3.83A2 2 0 0 0 9.59 3.17L3 3v6.59a2 2 0 0 0 .59 1.41l9.59 9.59a2 2 0 0 0 2.82 0l4.59-4.59a2 2 0 0 0 0-2.82z"/><circle cx="7.5" cy="7.5" r="1.2"/></g>
+<g id="i-help"><circle cx="12" cy="12" r="10"/><path d="M9.1 9a3 3 0 0 1 5.82 1c0 2-3 2-3 4"/><line x1="12" y1="17.5" x2="12" y2="17.5"/></g>
+<g id="i-layout-template"><rect x="3" y="3" width="18" height="7" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="14" y="13" width="7" height="8" rx="1.5"/></g>
+<g id="i-file-doc"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></g>
 </defs>
 </svg></div>
 <script src="script.js"></script>

@@ -129,6 +129,7 @@
       pinned: false,
       favorite: false,
       color: null,
+      tags: [],
       trashed: false,
       order: now,
       ...overrides
@@ -287,6 +288,7 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
   const titleInput = $("titleInput");
   const editor = $("editor");
   const styleSelect = $("styleSelect");
+  const fontFamilySelect = $("fontFamilySelect");
   const fontSizeInput = $("fontSizeInput");
   const cpHexInput = $("cpHexInput");
   const cpSwatchGrid = $("cpSwatchGrid");
@@ -294,10 +296,24 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
   const cpSvCursor = $("cpSvCursor");
   const cpHueSlider = $("cpHueSlider");
   const cpPreview = $("cpPreview");
+  const hlHexInput = $("hlHexInput");
+  const hlSvBox = $("hlSvBox");
+  const hlSvCursor = $("hlSvCursor");
+  const hlHueSlider = $("hlHueSlider");
+  const hlPreview = $("hlPreview");
+  const tagsChips = $("tagsChips");
+  const tagInput = $("tagInput");
+  const shortcutsOverlay = $("shortcutsOverlay");
+  const slashMenu = $("slashMenu");
+  const noteLinkMenu = $("noteLinkMenu");
+  let noteLinkAnchor = null;
   let currentFontSize = 16;
   let cpHue = 0;
   let cpSat = 0;
   let cpVal = 0;
+  let hlHue = 48;
+  let hlSat = 0.6;
+  let hlVal = 1;
   const statWords = $("statWords");
   const statChars = $("statChars");
   const statRead = $("statRead");
@@ -315,8 +331,8 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
     notes = loadNotes();
     if (notes.length === 0) {
       const welcome = makeNote({
-        title: "Welcome to TinyNote",
-        content: "<h1>Welcome to TinyNote</h1><p>A private space for your thoughts, fast enough to keep up with them.</p><p><strong>Try:</strong></p><ul><li>Press <code>Ctrl/\u2318 K</code> for the command palette</li><li>Format with <code>Ctrl+B</code>, <code>Ctrl+I</code></li><li>Export, or import \u2014 even by dragging a file onto the app</li></ul><blockquote>Just you and your thoughts.</blockquote>"
+        title: "Welcome to Tiny Notes",
+        content: "<h1>Welcome to Tiny Notes</h1><p>A private space for your thoughts, fast enough to keep up with them.</p><p><strong>Try:</strong></p><ul><li>Press <code>Ctrl/\u2318 K</code> for the command palette</li><li>Format with <code>Ctrl+B</code>, <code>Ctrl+I</code></li><li>Export, or import \u2014 even by dragging a file onto the app</li></ul><blockquote>Just you and your thoughts.</blockquote>"
       });
       notes = [welcome];
       settings.activeId = welcome.id;
@@ -434,6 +450,8 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
       card.draggable = !showTrash;
       if (n.color) card.style.boxShadow = `inset 3px 0 0 0 ${n.color}`;
       const titleHtml = query ? highlightHTML(escapeHtml(n.title || "Untitled"), query) : escapeHtml(n.title || "Untitled");
+      const tags = Array.isArray(n.tags) ? n.tags : [];
+      const tagsHtml = tags.length ? `<div class="note-tags">${tags.slice(0, 3).map((t) => `<span class="tag-chip-sm">${escapeHtml(t)}</span>`).join("")}${tags.length > 3 ? `<span class="tag-chip-sm">+${tags.length - 3}</span>` : ""}</div>` : "";
       card.innerHTML = `
       <div class="note-top">
         <span class="note-title">${titleHtml}</span>
@@ -441,6 +459,7 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
         ${n.favorite ? '<svg viewBox="0 0 24 24" class="icon icon-xs fav-mark"><use href="#i-star"/></svg>' : ""}
       </div>
       <div class="note-preview">${escapeHtml(previewText) || "Empty note"}</div>
+      ${tagsHtml}
       <div class="note-meta">
         <span>${fmt(n.updatedAt)}</span>
         <div class="note-actions"></div>
@@ -519,15 +538,17 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
     editor.setAttribute("data-empty", ((_a = editor.textContent) == null ? void 0 : _a.trim()) ? "" : "Start writing\u2026");
     editor.setAttribute("contenteditable", viewOnly ? "false" : "true");
     titleInput.readOnly = viewOnly;
-    document.querySelectorAll("#btnUndo, #btnRedo, #btnHr, #btnColor, #btnTextColor, #btnFontDec, #btnFontInc, #btnInsert, [data-cmd], [data-block]").forEach((b) => {
+    document.querySelectorAll("#btnUndo, #btnRedo, #btnHr, #btnColor, #btnTextColor, #btnHighlight, #btnFontDec, #btnFontInc, #btnInsert, [data-cmd], [data-block]").forEach((b) => {
       b.disabled = viewOnly;
     });
     styleSelect.disabled = viewOnly;
+    fontFamilySelect.disabled = viewOnly;
     fontSizeInput.disabled = viewOnly;
     $("btnDeleteAll").toggleAttribute("disabled", viewOnly);
     $("btnPin").classList.toggle("active", !!active.pinned);
     $("btnFav").classList.toggle("fav-active", !!active.favorite);
     $("btnPreview").classList.toggle("active", viewOnly);
+    renderTagsUI(active);
     const stats = countStats(active.content);
     statWords.textContent = `${stats.words} words`;
     statChars.textContent = `${stats.chars} chars`;
@@ -546,7 +567,7 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
   function duplicateNote(id) {
     const src = notes.find((n2) => n2.id === (id || settings.activeId));
     if (!src) return;
-    const n = makeNote({ title: src.title + " copy", content: src.content, color: src.color });
+    const n = makeNote({ title: src.title + " copy", content: src.content, color: src.color, tags: Array.isArray(src.tags) ? [...src.tags] : [] });
     notes = [n, ...notes];
     persistNotes();
     setActive(n.id);
@@ -586,6 +607,27 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
     persistNotes();
     renderAll();
   }
+  function setTags(id, tags) {
+    notes = notes.map((n) => n.id === id ? { ...n, tags, updatedAt: Date.now() } : n);
+    persistNotes();
+  }
+  function renderTagsUI(active) {
+    const tags = Array.isArray(active.tags) ? active.tags : [];
+    tagsChips.innerHTML = tags.map((t, i) => `
+      <span class="tag-chip">${escapeHtml(t)}<button type="button" class="tag-remove" data-tag-index="${i}" aria-label="Remove tag">\u2715</button></span>
+    `).join("");
+    tagsChips.querySelectorAll("[data-tag-index]").forEach((btn) => {
+      btn.onclick = () => {
+        const a = getActive();
+        if (!a) return;
+        const idx = Number(btn.dataset.tagIndex);
+        const next = (a.tags || []).filter((_, i) => i !== idx);
+        setTags(a.id, next);
+        renderTagsUI({ ...a, tags: next });
+        renderNotesList();
+      };
+    });
+  }
   function exportNote(n, kind) {
     const base = (n.title || "note").replace(/[^\w-]+/g, "_");
     if (kind === "txt") download(`${base}.txt`, stripHtml(n.content));
@@ -610,6 +652,7 @@ ${htmlToMarkdown(n.content)}`);
           pinned: x.pinned === true,
           favorite: x.favorite === true,
           color: typeof x.color === "string" ? x.color.slice(0, 60) : null,
+          tags: Array.isArray(x.tags) ? x.tags.filter((t) => typeof t === "string").slice(0, 10).map((t) => t.slice(0, 24)) : [],
           createdAt: typeof x.createdAt === "number" ? x.createdAt : Date.now(),
           updatedAt: typeof x.updatedAt === "number" ? x.updatedAt : Date.now()
         }));
@@ -676,6 +719,136 @@ ${htmlToMarkdown(n.content)}`);
     document.execCommand(cmd, false, val);
     onEditorInput();
     updateToolbarActiveStates();
+  }
+  function tryMarkdownShortcut() {
+    const sel = window.getSelection();
+    if (!sel || !sel.isCollapsed || sel.rangeCount === 0) return false;
+    const node = sel.anchorNode;
+    if (!node || node.nodeType !== 3) return false;
+    let block = node.parentElement;
+    while (block && block !== editor && !/^(P|DIV|LI)$/.test(block.tagName)) block = block.parentElement;
+    if (!block || block === editor) return false;
+    if (block.firstChild !== node) return false;
+    const text = node.textContent || "";
+    const offset = sel.anchorOffset;
+    const before = text.slice(0, offset);
+    const resetToOffset = () => {
+      node.textContent = text.slice(offset);
+      const r = document.createRange();
+      r.setStart(node, 0);
+      r.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(r);
+    };
+    const headingMap = { "# ": "H1", "## ": "H2", "### ": "H3" };
+    if (headingMap[before]) {
+      resetToOffset();
+      exec("formatBlock", headingMap[before]);
+      return true;
+    }
+    if (before === "> ") {
+      resetToOffset();
+      exec("formatBlock", "BLOCKQUOTE");
+      return true;
+    }
+    if (before === "- " || before === "* ") {
+      resetToOffset();
+      exec("insertUnorderedList");
+      return true;
+    }
+    if (/^1\.\s$/.test(before)) {
+      resetToOffset();
+      exec("insertOrderedList");
+      return true;
+    }
+    return false;
+  }
+  function openSlashMenu() {
+    const rect = getCaretRect();
+    if (!rect) return;
+    slashMenu.classList.add("open");
+    requestAnimationFrame(() => positionPanelAtRect(rect, slashMenu));
+  }
+  function closeSlashMenu() {
+    slashMenu.classList.remove("open");
+  }
+  function openNoteLinkMenu(query, node, start) {
+    const active = getActive();
+    const q = (query || "").toLowerCase();
+    const candidates = notes
+      .filter((n) => !n.trashed && (!active || n.id !== active.id) && (!q || (n.title || "Untitled").toLowerCase().includes(q)))
+      .slice(0, 6);
+    noteLinkAnchor = { node, start };
+    noteLinkMenu.innerHTML = candidates.length
+      ? candidates.map((n) => `<button type="button" class="menu-item" data-link-note-id="${n.id}"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-link"/></svg>${escapeHtml(n.title || "Untitled")}</button>`).join("")
+      : '<div class="menu-item-empty">No matching notes</div>';
+    noteLinkMenu.querySelectorAll("[data-link-note-id]").forEach((btn) => {
+      btn.onclick = () => insertNoteLink(btn.dataset.linkNoteId);
+    });
+    const rect = getCaretRect();
+    if (!rect) return;
+    noteLinkMenu.classList.add("open");
+    requestAnimationFrame(() => positionPanelAtRect(rect, noteLinkMenu));
+  }
+  function closeNoteLinkMenu() {
+    noteLinkMenu.classList.remove("open");
+    noteLinkAnchor = null;
+  }
+  function insertNoteLink(id) {
+    const target = notes.find((n) => n.id === id);
+    const anchor = noteLinkAnchor;
+    if (!target || !anchor || !anchor.node || !anchor.node.parentNode) {
+      closeNoteLinkMenu();
+      return;
+    }
+    const sel = window.getSelection();
+    const node = anchor.node;
+    const full = node.textContent || "";
+    const end = sel && sel.rangeCount && sel.anchorNode === node ? sel.anchorOffset : full.length;
+    const range = document.createRange();
+    range.setStart(node, Math.min(anchor.start, full.length));
+    range.setEnd(node, Math.min(Math.max(end, anchor.start), full.length));
+    range.deleteContents();
+    const frag = range.createContextualFragment(`<a href="#" class="note-link" data-note-id="${target.id}" contenteditable="false">${escapeHtml(target.title || "Untitled")}</a>\u00a0`);
+    range.insertNode(frag);
+    range.collapse(false);
+    if (sel) {
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    closeNoteLinkMenu();
+    onEditorInput();
+  }
+  function checkInlineTriggers() {
+    if (viewOnly) return;
+    const sel = window.getSelection();
+    if (!sel || !sel.isCollapsed || sel.rangeCount === 0) {
+      closeSlashMenu();
+      closeNoteLinkMenu();
+      return;
+    }
+    const node = sel.anchorNode;
+    if (!node || node.nodeType !== 3 || !editor.contains(node)) {
+      closeSlashMenu();
+      closeNoteLinkMenu();
+      return;
+    }
+    const offset = sel.anchorOffset;
+    const text = node.textContent || "";
+    const before = text.slice(0, offset);
+    let block = node.parentElement;
+    while (block && block !== editor && !/^(P|DIV|LI)$/.test(block.tagName)) block = block.parentElement;
+    if (block && block !== editor && block.firstChild === node && text === "/" && before === "/") {
+      openSlashMenu();
+    } else {
+      closeSlashMenu();
+    }
+    const m = /\[\[([^[\]]{0,40})$/.exec(before);
+    if (m) {
+      openNoteLinkMenu(m[1], node, offset - m[0].length);
+    } else {
+      closeNoteLinkMenu();
+    }
   }
   const TRACKED_CMDS = ["bold", "italic", "underline", "strikeThrough", "insertUnorderedList", "insertOrderedList"];
   function wrapSelectionWithStyle(styleProp, styleValue) {
@@ -752,6 +925,29 @@ ${htmlToMarkdown(n.content)}`);
     cpSat = x;
     cpVal = 1 - y;
     updateColorPickerUI();
+  }
+  function updateHighlightPickerUI() {
+    const hex = hsvToHex(hlHue, hlSat, hlVal);
+    hlHexInput.value = hex;
+    hlPreview.style.background = hex;
+    hlSvBox.style.backgroundColor = `hsl(${hlHue},100%,50%)`;
+    hlSvCursor.style.left = hlSat * 100 + "%";
+    hlSvCursor.style.top = (1 - hlVal) * 100 + "%";
+    hlHueSlider.value = String(Math.round(hlHue));
+  }
+  function applyCurrentHighlightColor() {
+    wrapSelectionWithStyle("background-color", hsvToHex(hlHue, hlSat, hlVal));
+  }
+  function hlSvBoxPointer(e) {
+    const rect = hlSvBox.getBoundingClientRect();
+    const point = e.touches ? e.touches[0] : e;
+    let x = (point.clientX - rect.left) / rect.width;
+    let y = (point.clientY - rect.top) / rect.height;
+    x = Math.max(0, Math.min(1, x));
+    y = Math.max(0, Math.min(1, y));
+    hlSat = x;
+    hlVal = 1 - y;
+    updateHighlightPickerUI();
   }
   function getSelectionFontSize() {
     const sel = window.getSelection();
@@ -988,6 +1184,31 @@ ${htmlToMarkdown(n.content)}`);
   function closeAllFloating() {
     floatingMenus.forEach(({ panel }) => panel.classList.remove("open"));
     floatingScrim.classList.remove("show");
+    if (slashMenu) slashMenu.classList.remove("open");
+    if (noteLinkMenu) {
+      noteLinkMenu.classList.remove("open");
+      noteLinkAnchor = null;
+    }
+  }
+  function positionPanelAtRect(rect, panel) {
+    const panelRect = panel.getBoundingClientRect();
+    const w = panelRect.width || 220;
+    let left = rect.left;
+    left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+    let top = rect.bottom + 6;
+    const h = panelRect.height || 0;
+    if (top + h > window.innerHeight - 8) top = Math.max(8, rect.top - h - 6);
+    panel.style.left = `${left}px`;
+    panel.style.top = `${top}px`;
+  }
+  function getCaretRect() {
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0).cloneRange();
+    range.collapse(true);
+    const rects = range.getClientRects();
+    if (rects.length) return rects[0];
+    return range.startContainer.nodeType === 1 ? range.startContainer.getBoundingClientRect() : null;
   }
   function openFloatingMenu(trigger, panel) {
     closeAllFloating();
@@ -1084,6 +1305,7 @@ ${htmlToMarkdown(n.content)}`);
     const colorPopover = registerFloatingMenu("btnColor", "colorPopover");
     const moreMenu = registerFloatingMenu("btnMore", "moreMenu");
     const textColorPopover = registerFloatingMenu("btnTextColor", "textColorPopover");
+    const highlightColorPopover = registerFloatingMenu("btnHighlight", "highlightColorPopover");
     const insertMenu = registerFloatingMenu("btnInsert", "insertMenu");
     colorPopover.querySelectorAll(".swatch").forEach((sw) => {
       sw.onclick = () => {
@@ -1200,6 +1422,130 @@ ${htmlToMarkdown(n.content)}`);
       const val = styleSelect.value;
       exec("formatBlock", val === "P" ? "P" : val);
     });
+    fontFamilySelect.addEventListener("change", () => {
+      const val = fontFamilySelect.value;
+      wrapSelectionWithStyle("font-family", val || "inherit");
+    });
+    highlightColorPopover.querySelectorAll("[data-hcolor]").forEach((sw) => {
+      sw.onclick = () => {
+        const val = sw.dataset.hcolor || "inherit";
+        wrapSelectionWithStyle("background-color", val);
+        if (val !== "inherit") {
+          const hsv = hexToHsv(val);
+          if (hsv) {
+            hlHue = hsv.h;
+            hlSat = hsv.s;
+            hlVal = hsv.v;
+            updateHighlightPickerUI();
+          }
+        }
+        closeAllFloating();
+      };
+    });
+    hlHexInput.addEventListener("change", () => {
+      let v = hlHexInput.value.trim();
+      if (v && !v.startsWith("#")) v = "#" + v;
+      if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+        const hsv = hexToHsv(v);
+        if (hsv) {
+          hlHue = hsv.h;
+          hlSat = hsv.s;
+          hlVal = hsv.v;
+          updateHighlightPickerUI();
+        }
+        wrapSelectionWithStyle("background-color", v);
+      } else {
+        hlHexInput.value = hsvToHex(hlHue, hlSat, hlVal);
+      }
+    });
+    hlHueSlider.addEventListener("input", () => {
+      hlHue = parseFloat(hlHueSlider.value) || 0;
+      updateHighlightPickerUI();
+      applyCurrentHighlightColor();
+    });
+    let hlDragging = false;
+    hlSvBox.addEventListener("mousedown", (e) => {
+      hlDragging = true;
+      hlSvBoxPointer(e);
+      applyCurrentHighlightColor();
+    });
+    hlSvBox.addEventListener("touchstart", (e) => {
+      hlDragging = true;
+      hlSvBoxPointer(e);
+      applyCurrentHighlightColor();
+    }, { passive: true });
+    window.addEventListener("mousemove", (e) => {
+      if (hlDragging) hlSvBoxPointer(e);
+    });
+    window.addEventListener("touchmove", (e) => {
+      if (hlDragging) hlSvBoxPointer(e);
+    }, { passive: true });
+    window.addEventListener("mouseup", () => {
+      if (hlDragging) {
+        hlDragging = false;
+        applyCurrentHighlightColor();
+      }
+    });
+    window.addEventListener("touchend", () => {
+      if (hlDragging) {
+        hlDragging = false;
+        applyCurrentHighlightColor();
+      }
+    });
+    updateHighlightPickerUI();
+    tagInput.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      const active = getActive();
+      if (!active) return;
+      const val = tagInput.value.trim().replace(/^#+/, "").slice(0, 24);
+      if (!val) return;
+      const existing = Array.isArray(active.tags) ? active.tags : [];
+      if (existing.some((t) => t.toLowerCase() === val.toLowerCase())) {
+        tagInput.value = "";
+        return;
+      }
+      const next = [...existing, val].slice(0, 10);
+      setTags(active.id, next);
+      renderTagsUI({ ...active, tags: next });
+      renderNotesList();
+      tagInput.value = "";
+    });
+    $("btnShortcutsHelp").onclick = () => {
+      closeAllFloating();
+      shortcutsOverlay.classList.remove("hidden");
+    };
+    shortcutsOverlay.addEventListener("click", (e) => {
+      if (e.target === shortcutsOverlay) shortcutsOverlay.classList.add("hidden");
+    });
+    const templatesMenu = registerFloatingMenu("btnTemplates", "templatesMenu");
+    const TEMPLATES = {
+      blank: { title: "", content: "" },
+      meeting: {
+        title: "Meeting notes",
+        content: "<h2>Meeting notes</h2><p><strong>Date:</strong> &nbsp;<strong>Attendees:</strong> </p><h3>Agenda</h3><ul><li>&nbsp;</li></ul><h3>Notes</h3><p>&nbsp;</p><h3>Action items</h3><ul class=\"checklist\"><li><label><input type=\"checkbox\"> &nbsp;</label></li></ul>"
+      },
+      todo: {
+        title: "To-do list",
+        content: "<h2>To-do list</h2><ul class=\"checklist\"><li><label><input type=\"checkbox\"> Task one</label></li><li><label><input type=\"checkbox\"> Task two</label></li><li><label><input type=\"checkbox\"> Task three</label></li></ul>"
+      },
+      journal: {
+        title: "Journal entry",
+        content: "<h2>Journal entry</h2><p><strong>Today I\u2019m grateful for:</strong></p><p>&nbsp;</p><p><strong>What happened today:</strong></p><p>&nbsp;</p><p><strong>Tomorrow I want to:</strong></p><p>&nbsp;</p>"
+      }
+    };
+    templatesMenu.querySelectorAll("[data-template]").forEach((btn) => {
+      btn.onclick = () => {
+        closeAllFloating();
+        const t = TEMPLATES[btn.dataset.template] || TEMPLATES.blank;
+        const n = makeNote({ title: t.title, content: t.content });
+        notes = [n, ...notes];
+        persistNotes();
+        showTrash = false;
+        setActive(n.id);
+        setTimeout(() => titleInput.focus(), 60);
+      };
+    });
     $("mInsertLink").onclick = () => {
       closeAllFloating();
       const url = prompt("Link URL (https://\u2026)");
@@ -1221,11 +1567,71 @@ ${htmlToMarkdown(n.content)}`);
       document.execCommand("insertImage", false, url);
       onEditorInput();
     };
+    function insertImageFile(file) {
+      if (!file || !file.type || !file.type.startsWith("image/")) return;
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image is too large \u2014 please use one under 5MB.");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        editor.focus();
+        document.execCommand("insertImage", false, reader.result);
+        onEditorInput();
+      };
+      reader.readAsDataURL(file);
+    }
+    function stripPastedColors(html) {
+      const template = document.createElement("template");
+      template.innerHTML = html;
+      template.content.querySelectorAll("[style]").forEach((el) => {
+        el.style.removeProperty("color");
+        el.style.removeProperty("background-color");
+        el.style.removeProperty("background");
+        if (!el.getAttribute("style").trim()) el.removeAttribute("style");
+      });
+      template.content.querySelectorAll("font").forEach((el) => el.removeAttribute("color"));
+      return template.innerHTML;
+    }
+    editor.addEventListener("paste", (e) => {
+      if (viewOnly) return;
+      const cd = e.clipboardData;
+      if (!cd) return;
+      const items = cd.items;
+      const imageItem = items ? Array.from(items).find((it) => it.type && it.type.startsWith("image/")) : null;
+      if (imageItem) {
+        e.preventDefault();
+        insertImageFile(imageItem.getAsFile());
+        return;
+      }
+      const html = cd.getData("text/html");
+      if (html) {
+        e.preventDefault();
+        const clean = stripPastedColors(sanitizeHtml(html));
+        document.execCommand("insertHTML", false, clean);
+        onEditorInput();
+      }
+    });
     $("mInsertChecklist").onclick = () => {
       closeAllFloating();
       if (viewOnly) return;
       editor.focus();
       document.execCommand("insertHTML", false, '<ul class="checklist"><li><label><input type="checkbox"> Untitled task</label></li></ul><p><br></p>');
+      onEditorInput();
+    };
+    $("mInsertTable").onclick = () => {
+      closeAllFloating();
+      if (viewOnly) return;
+      editor.focus();
+      const rows = 3, cols = 3;
+      let html = '<table class="note-table"><tbody>';
+      for (let r = 0; r < rows; r++) {
+        html += "<tr>";
+        for (let c = 0; c < cols; c++) html += "<td>&nbsp;</td>";
+        html += "</tr>";
+      }
+      html += "</tbody></table><p><br></p>";
+      document.execCommand("insertHTML", false, html);
       onEditorInput();
     };
     $("btnPin").onclick = () => {
@@ -1261,18 +1667,100 @@ ${htmlToMarkdown(n.content)}`);
       if (a) exportNote(a, "json");
       closeAllFloating();
     };
-    $("mExportPdf").onclick = () => {
-      closeAllFloating();
-      const active = getActive();
-      if (!active) return;
+    function ensureJsPDF() {
+      if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+      if (window.__jspdfLoading) return window.__jspdfLoading;
+      window.__jspdfLoading = new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+        s.onload = () => {
+          if (window.jspdf && window.jspdf.jsPDF) resolve(window.jspdf.jsPDF);
+          else reject(new Error("jsPDF failed to load"));
+        };
+        s.onerror = () => reject(new Error("jsPDF failed to load"));
+        document.head.appendChild(s);
+      });
+      return window.__jspdfLoading;
+    }
+    function printFallback(active) {
       const prevTitle = document.title;
-      document.title = (active.title || "Untitled") + " \u2014 TinyNote";
+      document.title = (active.title || "Untitled") + " \u2014 Tiny Notes";
       document.body.classList.add("printing-note");
       window.print();
       setTimeout(() => {
         document.body.classList.remove("printing-note");
         document.title = prevTitle;
       }, 400);
+    }
+    $("mExportPdf").onclick = async () => {
+      closeAllFloating();
+      const active = getActive();
+      if (!active) return;
+      try {
+        const JsPDF = await ensureJsPDF();
+        const doc = new JsPDF({ unit: "pt", format: "a4" });
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const marginX = 48;
+        const marginY = 56;
+        const maxWidth = pageWidth - marginX * 2;
+        let y = marginY;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.splitTextToSize(active.title || "Untitled", maxWidth).forEach((line) => {
+          doc.text(line, marginX, y);
+          y += 24;
+        });
+        y += 10;
+        doc.setDrawColor(220);
+        doc.line(marginX, y, pageWidth - marginX, y);
+        y += 20;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        const bodyText = stripHtml(active.content) || " ";
+        bodyText.split("\n").forEach((para) => {
+          if (para.trim() === "") {
+            y += 14;
+            return;
+          }
+          doc.splitTextToSize(para, maxWidth).forEach((line) => {
+            if (y > pageHeight - marginY) {
+              doc.addPage();
+              y = marginY;
+            }
+            doc.text(line, marginX, y);
+            y += 16;
+          });
+          y += 6;
+        });
+        const base = (active.title || "note").replace(/[^\w-]+/g, "_") || "note";
+        doc.save(`${base}.pdf`);
+      } catch {
+        printFallback(active);
+      }
+    };
+    $("mExportDoc").onclick = () => {
+      closeAllFloating();
+      const active = getActive();
+      if (!active) return;
+      const base = (active.title || "note").replace(/[^\w-]+/g, "_") || "note";
+      const bodyHtml = active.content || "<p></p>";
+      const doc = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${escapeHtml(active.title || "Untitled")}</title>
+<style>body{font-family:Calibri,Arial,sans-serif;font-size:12pt;} table{border-collapse:collapse;} td,th{border:1px solid #999;padding:4px 8px;}</style>
+</head><body>
+<h1>${escapeHtml(active.title || "Untitled")}</h1>
+${bodyHtml}
+</body></html>`;
+      const blob = new Blob(["\ufeff", doc], { type: "application/msword" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${base}.doc`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2e3);
     };
     $("mExportAll").onclick = () => {
       exportAll();
@@ -1364,7 +1852,83 @@ ${htmlToMarkdown(n.content)}`);
     document.addEventListener("click", closeAllFloating);
     window.addEventListener("resize", closeAllFloating);
     editor.addEventListener("input", onEditorInput);
+    editor.addEventListener("input", () => {
+      try {
+        checkInlineTriggers();
+      } catch {
+      }
+    });
+    slashMenu.addEventListener("mousedown", (e) => e.preventDefault());
+    slashMenu.addEventListener("click", (e) => e.stopPropagation());
+    noteLinkMenu.addEventListener("mousedown", (e) => e.preventDefault());
+    noteLinkMenu.addEventListener("click", (e) => e.stopPropagation());
+    editor.addEventListener("click", (e) => {
+      const link = e.target.closest && e.target.closest(".note-link");
+      if (!link) return;
+      e.preventDefault();
+      const id = link.dataset.noteId;
+      if (notes.some((n) => n.id === id && !n.trashed)) {
+        setActive(id);
+      } else {
+        alert("That note no longer exists.");
+      }
+    });
+    slashMenu.querySelectorAll("[data-slash]").forEach((btn) => {
+      btn.onclick = () => {
+        const sel = window.getSelection();
+        const node = sel && sel.anchorNode;
+        closeSlashMenu();
+        if (node && node.nodeType === 3 && node.textContent === "/") {
+          node.textContent = "";
+          const r = document.createRange();
+          r.setStart(node, 0);
+          r.collapse(true);
+          sel.removeAllRanges();
+          sel.addRange(r);
+        }
+        editor.focus();
+        const type = btn.dataset.slash;
+        if (type === "h1") exec("formatBlock", "H1");
+        else if (type === "h2") exec("formatBlock", "H2");
+        else if (type === "h3") exec("formatBlock", "H3");
+        else if (type === "quote") exec("formatBlock", "BLOCKQUOTE");
+        else if (type === "code") exec("formatBlock", "PRE");
+        else if (type === "ul") exec("insertUnorderedList");
+        else if (type === "ol") exec("insertOrderedList");
+        else if (type === "checklist") {
+          document.execCommand("insertHTML", false, '<ul class="checklist"><li><label><input type="checkbox"> Untitled task</label></li></ul><p><br></p>');
+          onEditorInput();
+        } else if (type === "table") {
+          let html = '<table class="note-table"><tbody>';
+          for (let r2 = 0; r2 < 3; r2++) {
+            html += "<tr>";
+            for (let c = 0; c < 3; c++) html += "<td>&nbsp;</td>";
+            html += "</tr>";
+          }
+          html += "</tbody></table><p><br></p>";
+          document.execCommand("insertHTML", false, html);
+          onEditorInput();
+        } else if (type === "hr") {
+          document.execCommand("insertHTML", false, "<hr><p><br></p>");
+          onEditorInput();
+        } else if (type === "link") {
+          document.execCommand("insertText", false, "[[");
+          try {
+            checkInlineTriggers();
+          } catch {
+          }
+        }
+      };
+    });
     editor.addEventListener("keyup", updateToolbarActiveStates);
+    editor.addEventListener("keyup", (e) => {
+      if (e.key === " " && !viewOnly) {
+        try {
+          if (tryMarkdownShortcut()) onEditorInput();
+        } catch {
+        }
+      }
+    });
     editor.addEventListener("mouseup", updateToolbarActiveStates);
     editor.addEventListener("focus", updateToolbarActiveStates);
     editor.addEventListener("blur", updateToolbarActiveStates);
@@ -1442,7 +2006,10 @@ ${htmlToMarkdown(n.content)}`);
       if (e.key === "Escape") {
         closeCmd();
         historyOverlay.classList.add("hidden");
+        shortcutsOverlay.classList.add("hidden");
         closeAllFloating();
+        closeSlashMenu();
+        closeNoteLinkMenu();
       }
     });
     document.addEventListener("fullscreenchange", () => {
@@ -1478,7 +2045,14 @@ ${htmlToMarkdown(n.content)}`);
       dragDepth = 0;
       dropOverlay.classList.add("hidden");
       const files = e.dataTransfer ? Array.from(e.dataTransfer.files) : [];
-      files.forEach((f) => importFile(f));
+      const dropInEditor = !viewOnly && !!getActive() && editor.contains(e.target);
+      files.forEach((f) => {
+        if (f.type && f.type.startsWith("image/")) {
+          if (dropInEditor) insertImageFile(f);
+        } else {
+          importFile(f);
+        }
+      });
     });
   }
   init();
