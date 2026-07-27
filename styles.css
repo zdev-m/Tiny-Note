@@ -324,7 +324,9 @@ input, select, textarea { font: inherit; color: inherit; }
   body.printing-note .editor-scroll { position: absolute; inset: 0; overflow: visible; padding: 24px; }
 }
 
-.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; border-bottom: 1px solid var(--border); padding: 10px 16px; }
+.toolbar { display: flex; flex-direction: column; gap: 6px; border-bottom: 1px solid var(--border); padding: 8px 16px; }
+.toolbar-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.toolbar-row-actions { padding-top: 6px; border-top: 1px solid var(--border); }
 .title-input { min-width: 0; flex: 1; margin-right: 12px; background: transparent; border: none; outline: none; font-family: var(--font-display); font-size: 20px; font-weight: 600; letter-spacing: -0.02em; }
 .title-input::placeholder { color: var(--muted-foreground); }
 
@@ -592,8 +594,9 @@ input, select, textarea { font: inherit; color: inherit; }
 
   /* Keep the toolbar a single scrollable row (highest-priority tools first)
      instead of wrapping into several rows that push the editor down. */
-  .toolbar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 8px 10px; }
+  .toolbar { flex-direction: row; flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 8px 10px; gap: 4px; }
   .toolbar::-webkit-scrollbar { display: none; }
+  .toolbar-row { display: contents; }
   .title-input { flex: 1 1 auto; min-width: 96px; font-size: 17px; margin-right: 8px; }
   .tool-group { padding-right: 4px; margin-right: 2px; }
   .tool-btn { width: 30px; height: 30px; }

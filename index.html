@@ -94,25 +94,14 @@
 
     <div id="editorView" class="editor-view hidden">
       <!-- Toolbar -->
-      <div class="toolbar glass-strong scroll-x-thin">
+      <div class="toolbar glass-strong">
+        <div class="toolbar-row toolbar-row-top">
         <button class="tool-btn mobile-back-btn" id="btnMobileBack" title="Back to notes" aria-label="Back to notes"><svg viewBox="0 0 24 24" class="icon"><use href="#i-arrow-left"/></svg></button>
         <input id="titleInput" class="title-input" placeholder="Untitled" aria-label="Note title" />
 
         <div class="tool-group">
           <button class="tool-btn" id="btnUndo" title="Undo (⌘Z)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-undo"/></svg></button>
           <button class="tool-btn" id="btnRedo" title="Redo (⌘⇧Z)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-redo"/></svg></button>
-        </div>
-        <div class="tool-group">
-          <button class="tool-btn" data-cmd="bold" title="Bold (⌘B)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-bold"/></svg></button>
-          <button class="tool-btn" data-cmd="italic" title="Italic (⌘I)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-italic"/></svg></button>
-          <button class="tool-btn" data-cmd="underline" title="Underline"><svg viewBox="0 0 24 24" class="icon"><use href="#i-underline"/></svg></button>
-          <button class="tool-btn" data-cmd="strikeThrough" title="Strikethrough"><svg viewBox="0 0 24 24" class="icon"><use href="#i-strike"/></svg></button>
-        </div>
-        <div class="tool-group">
-          <button class="tool-btn" data-cmd="justifyLeft" title="Align left"><svg viewBox="0 0 24 24" class="icon"><use href="#i-align-left"/></svg></button>
-          <button class="tool-btn" data-cmd="justifyCenter" title="Align center"><svg viewBox="0 0 24 24" class="icon"><use href="#i-align-center"/></svg></button>
-          <button class="tool-btn" data-cmd="justifyRight" title="Align right"><svg viewBox="0 0 24 24" class="icon"><use href="#i-align-right"/></svg></button>
-          <button class="tool-btn" data-cmd="justifyFull" title="Justify"><svg viewBox="0 0 24 24" class="icon"><use href="#i-align-justify"/></svg></button>
         </div>
         <div class="tool-group style-select-wrap" id="fontFamilyWrap" title="Font family">
           <svg viewBox="0 0 24 24" class="icon icon-sm muted"><use href="#i-type"/></svg>
@@ -149,12 +138,27 @@
           <button class="tool-btn tool-btn-sm" id="btnFontInc" aria-label="Increase font size">+</button>
         </div>
         <div class="tool-group">
+          <button class="tool-btn" data-cmd="bold" title="Bold (⌘B)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-bold"/></svg></button>
+          <button class="tool-btn" data-cmd="italic" title="Italic (⌘I)"><svg viewBox="0 0 24 24" class="icon"><use href="#i-italic"/></svg></button>
+          <button class="tool-btn" data-cmd="underline" title="Underline"><svg viewBox="0 0 24 24" class="icon"><use href="#i-underline"/></svg></button>
+          <button class="tool-btn" data-cmd="strikeThrough" title="Strikethrough"><svg viewBox="0 0 24 24" class="icon"><use href="#i-strike"/></svg></button>
+        </div>
+        <div class="tool-group">
+          <div class="popover-wrap" id="alignWrap">
+            <button class="tool-btn" id="btnAlign" title="Alignment"><svg viewBox="0 0 24 24" class="icon" id="alignIcon"><use href="#i-align-left"/></svg></button>
+          </div>
+        </div>
+        <div class="tool-group">
           <div class="popover-wrap" id="textColorWrap">
             <button class="tool-btn" id="btnTextColor" title="Text color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-type"/></svg></button>
           </div>
           <div class="popover-wrap" id="highlightColorWrap">
             <button class="tool-btn" id="btnHighlight" title="Highlight color"><svg viewBox="0 0 24 24" class="icon"><use href="#i-palette"/></svg></button>
           </div>
+        </div>
+        </div>
+        <div class="toolbar-row toolbar-row-actions">
+        <div class="tool-group">
           <div class="popover-wrap" id="insertWrap">
             <button class="tool-btn" id="btnInsert" title="Insert"><svg viewBox="0 0 24 24" class="icon"><use href="#i-insert"/></svg></button>
           </div>
@@ -179,11 +183,18 @@
           </div>
           <input type="file" id="importFileInput" accept=".txt,.md,.json" class="hidden" multiple />
         </div>
+        </div>
       </div>
 
       <!-- Floating popovers/menus: JS moves these to <body> on init so they
            can never be clipped by the toolbar's horizontal scroll, and they
            become bottom sheets on mobile. -->
+      <div class="floating-menu menu glass-strong" id="alignMenu">
+        <button class="menu-item" data-align="justifyLeft" data-align-icon="i-align-left"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-align-left"/></svg>Align left</button>
+        <button class="menu-item" data-align="justifyCenter" data-align-icon="i-align-center"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-align-center"/></svg>Align center</button>
+        <button class="menu-item" data-align="justifyRight" data-align-icon="i-align-right"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-align-right"/></svg>Align right</button>
+        <button class="menu-item" data-align="justifyFull" data-align-icon="i-align-justify"><svg viewBox="0 0 24 24" class="icon icon-sm"><use href="#i-align-justify"/></svg>Justify</button>
+      </div>
       <div class="floating-menu popover glass-strong" id="colorPopover">
         <button class="swatch swatch-clear" data-color="" title="Clear">✕</button>
         <button class="swatch" data-color="oklch(0.82 0.15 75)" style="background:oklch(0.82 0.15 75)" aria-label="amber"></button>

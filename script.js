@@ -538,7 +538,7 @@ ${Array.from(e.children).map((c, i) => `${i + 1}. ${walk(c)}`).join("\n")}
     editor.setAttribute("data-empty", ((_a = editor.textContent) == null ? void 0 : _a.trim()) ? "" : "Start writing\u2026");
     editor.setAttribute("contenteditable", viewOnly ? "false" : "true");
     titleInput.readOnly = viewOnly;
-    document.querySelectorAll("#btnUndo, #btnRedo, #btnHr, #btnColor, #btnTextColor, #btnHighlight, #btnFontDec, #btnFontInc, #btnInsert, [data-cmd], [data-block]").forEach((b) => {
+    document.querySelectorAll("#btnUndo, #btnRedo, #btnHr, #btnColor, #btnTextColor, #btnHighlight, #btnAlign, #btnFontDec, #btnFontInc, #btnInsert, [data-cmd], [data-block]").forEach((b) => {
       b.disabled = viewOnly;
     });
     styleSelect.disabled = viewOnly;
@@ -1304,6 +1304,15 @@ ${htmlToMarkdown(n.content)}`);
     floatingScrim.addEventListener("click", closeAllFloating);
     const colorPopover = registerFloatingMenu("btnColor", "colorPopover");
     const moreMenu = registerFloatingMenu("btnMore", "moreMenu");
+    const alignMenu = registerFloatingMenu("btnAlign", "alignMenu");
+    const alignIcon = $("alignIcon");
+    alignMenu.querySelectorAll("[data-align]").forEach((btn) => {
+      btn.onclick = () => {
+        exec(btn.dataset.align);
+        alignIcon.setAttribute("href", `#${btn.dataset.alignIcon}`);
+        closeAllFloating();
+      };
+    });
     const textColorPopover = registerFloatingMenu("btnTextColor", "textColorPopover");
     const highlightColorPopover = registerFloatingMenu("btnHighlight", "highlightColorPopover");
     const insertMenu = registerFloatingMenu("btnInsert", "insertMenu");
